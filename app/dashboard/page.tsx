@@ -89,7 +89,7 @@ export default function DashboardPage() {
               >
                 + Add topic
               </Link>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             </div>
           </div>
 
