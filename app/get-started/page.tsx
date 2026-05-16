@@ -3,7 +3,9 @@
 import { saveProfile } from "@/app/get-started/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 const c = {
   bg: "#f6f4ef",
@@ -36,22 +38,47 @@ const EXPERIENCE_CATEGORIES = [
   "Other",
 ] as const;
 
-const TOTAL_STEPS = 3;
 const DESCRIPTION_MAX = 500;
 
-type Step = 1 | 2 | 3;
-
 export default function GetStartedPage() {
+  const { user, isLoaded } = useUser();
   const router = useRouter();
-  const [step, setStep] = useState<Step>(1);
+  const [existingName, setExistingName] = useState<string | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
   const [categories, setCategories] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
   const [fullName, setFullName] = useState("");
   const [confirmedAdult, setConfirmedAdult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  const progress = (step / TOTAL_STEPS) * 100;
+  // Check if user already has a profile
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (data?.full_name) {
+          setExistingName(data.full_name);
+        }
+        setLoadingUser(false);
+      });
+  }, [isLoaded, user]);
+
+  const isReturning = existingName !== null;
+  const TOTAL_STEPS = isReturning ? 2 : 3;
 
   function toggleCategory(category: string) {
     setCategories((prev) => {
@@ -63,22 +90,23 @@ export default function GetStartedPage() {
   }
 
   function goNext() {
-    if (step < TOTAL_STEPS) setStep((step + 1) as Step);
+    if (step < TOTAL_STEPS) setStep((step + 1) as 1 | 2 | 3);
   }
 
   function goBack() {
-    if (step > 1) setStep((step - 1) as Step);
+    if (step > 1) setStep((step - 1) as 1 | 2 | 3);
   }
 
   async function handleSubmit() {
-    if (!canContinue || isSubmitting) return;
-
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const nameToUse = isReturning ? existingName! : fullName.trim();
+
     try {
       const result = await saveProfile({
-        fullName: fullName.trim(),
+        fullName: nameToUse,
         description: description.trim(),
         experienceCategories: Array.from(categories),
       });
@@ -99,10 +127,19 @@ export default function GetStartedPage() {
 
   const canContinue =
     (step === 1 && categories.size > 0) ||
-    (step === 2 && description.trim().length >= 20) ||
-    (step === 3 &&
-      fullName.trim().length >= 2 &&
-      confirmedAdult);
+    (step === 2 && !isReturning && description.trim().length >= 20) ||
+    (step === 2 && isReturning && description.trim().length >= 20) ||
+    (step === 3 && fullName.trim().length >= 2 && confirmedAdult);
+
+  const progress = (step / TOTAL_STEPS) * 100;
+
+  if (loadingUser) {
+    return (
+      <div className="flex min-h-full items-center justify-center" style={{ backgroundColor: c.bg }}>
+        <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -114,36 +151,33 @@ export default function GetStartedPage() {
       <main className="relative mx-auto flex min-h-full max-w-xl flex-col px-6 py-10 sm:px-8 sm:py-14">
         <header className="mb-8">
           <Link
-            href="/"
+            href="/dashboard"
             className="mb-6 inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-70"
             style={{ color: c.inkMuted }}
           >
-            <span aria-hidden>←</span> Back to home
+            <span aria-hidden>←</span> Back to dashboard
           </Link>
 
           <div className="mb-6 flex items-center gap-3">
             <AapunMark size={36} />
             <div>
-              <p
-                className="text-lg font-semibold tracking-tight"
-                style={{ color: c.ink }}
-              >
-                Aapun
-              </p>
+              <p className="text-lg font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</p>
               <p className="text-sm" style={{ color: c.inkMuted }}>
                 <span className="italic">my own</span> — in Assamese
               </p>
             </div>
           </div>
 
+          {isReturning && (
+            <p className="mb-4 text-sm" style={{ color: c.inkMuted }}>
+              Welcome back, <strong style={{ color: c.ink }}>{existingName}</strong>. Add a new topic below.
+            </p>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span style={{ color: c.inkMuted }}>
-                Step {step} of {TOTAL_STEPS}
-              </span>
-              <span className="font-medium" style={{ color: c.sage }}>
-                {Math.round(progress)}%
-              </span>
+              <span style={{ color: c.inkMuted }}>Step {step} of {TOTAL_STEPS}</span>
+              <span className="font-medium" style={{ color: c.sage }}>{Math.round(progress)}%</span>
             </div>
             <div
               className="h-2 overflow-hidden rounded-full"
@@ -152,14 +186,10 @@ export default function GetStartedPage() {
               aria-valuenow={Math.round(progress)}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label="Profile setup progress"
             >
               <div
                 className="h-full rounded-full transition-all duration-300 ease-out"
-                style={{
-                  width: `${progress}%`,
-                  backgroundColor: c.sage,
-                }}
+                style={{ width: `${progress}%`, backgroundColor: c.sage }}
               />
             </div>
           </div>
@@ -167,27 +197,15 @@ export default function GetStartedPage() {
 
         <div
           className="flex flex-1 flex-col rounded-2xl p-6 shadow-sm backdrop-blur-sm sm:p-8"
-          style={{
-            backgroundColor: c.card,
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: c.border,
-          }}
+          style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
         >
           {step === 1 && (
-            <StepCategories
-              selected={categories}
-              onToggle={toggleCategory}
-            />
+            <StepCategories selected={categories} onToggle={toggleCategory} />
           )}
           {step === 2 && (
-            <StepDescription
-              value={description}
-              onChange={setDescription}
-              maxLength={DESCRIPTION_MAX}
-            />
+            <StepDescription value={description} onChange={setDescription} maxLength={DESCRIPTION_MAX} />
           )}
-          {step === 3 && (
+          {step === 3 && !isReturning && (
             <StepName
               value={fullName}
               onChange={setFullName}
@@ -199,13 +217,7 @@ export default function GetStartedPage() {
           {submitError && (
             <p
               className="mt-6 rounded-xl px-4 py-3 text-sm leading-relaxed"
-              style={{
-                backgroundColor: c.apricotLight,
-                color: c.ink,
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: `${c.apricot}44`,
-              }}
+              style={{ backgroundColor: c.apricotLight, color: c.ink, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}44` }}
               role="alert"
             >
               {submitError}
@@ -244,7 +256,7 @@ export default function GetStartedPage() {
                 className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors enabled:hover:bg-[#2f584b] disabled:cursor-not-allowed disabled:opacity-40"
                 style={{ backgroundColor: c.sage }}
               >
-                {isSubmitting ? "Saving…" : "Create profile"}
+                {isSubmitting ? "Saving…" : "Add topic"}
               </button>
             )}
           </nav>
@@ -263,17 +275,12 @@ function StepCategories({
 }) {
   return (
     <div>
-      <h1
-        className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl"
-        style={{ color: c.ink }}
-      >
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         What have you lived through?
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        Choose every area that fits your story. This helps us connect you with
-        peers who share something real — no labels required.
+        Choose every area that fits your story. This helps us connect you with peers who share something real.
       </p>
-
       <fieldset>
         <legend className="sr-only">Experience categories</legend>
         <div className="flex flex-wrap gap-2.5">
@@ -288,18 +295,8 @@ function StepCategories({
                 className="rounded-full px-4 py-2.5 text-sm font-medium transition-all"
                 style={
                   isSelected
-                    ? {
-                        backgroundColor: c.sage,
-                        color: "#fff",
-                        boxShadow: "0 1px 3px rgba(58, 107, 92, 0.25)",
-                      }
-                    : {
-                        backgroundColor: "#fff",
-                        color: c.inkSoft,
-                        borderWidth: 1,
-                        borderStyle: "solid",
-                        borderColor: c.border,
-                      }
+                    ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(58, 107, 92, 0.25)" }
+                    : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }
                 }
               >
                 {category}
@@ -308,7 +305,6 @@ function StepCategories({
           })}
         </div>
       </fieldset>
-
       {selected.size > 0 && (
         <p className="mt-6 text-sm" style={{ color: c.sage }}>
           {selected.size} selected — you can always update this later.
@@ -328,23 +324,15 @@ function StepDescription({
   maxLength: number;
 }) {
   const remaining = maxLength - value.length;
-
   return (
     <div>
-      <h1
-        className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl"
-        style={{ color: c.ink }}
-      >
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         Tell us your story, in your words
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        A few sentences about what you&apos;ve been through and what you might
-        want to talk about with a peer. There&apos;s no right way to write this.
+        A few sentences about what you've been through and what you'd like to talk about with a peer.
       </p>
-
-      <label htmlFor="experience-description" className="sr-only">
-        Personal experience description
-      </label>
+      <label htmlFor="experience-description" className="sr-only">Personal experience description</label>
       <textarea
         id="experience-description"
         value={value}
@@ -355,9 +343,7 @@ function StepDescription({
       />
       <div className="mt-2 flex items-center justify-between text-sm">
         <p style={{ color: value.trim().length < 20 ? c.apricot : c.inkMuted }}>
-          {value.trim().length < 20
-            ? "At least 20 characters to continue"
-            : "Thank you for sharing"}
+          {value.trim().length < 20 ? "At least 20 characters to continue" : "Thank you for sharing"}
         </p>
         <p style={{ color: c.inkMuted }}>{remaining} left</p>
       </div>
@@ -378,22 +364,13 @@ function StepName({
 }) {
   return (
     <div>
-      <h1
-        className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl"
-        style={{ color: c.ink }}
-      >
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         What should we call you?
       </h1>
       <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-        Aapun is built on real people and real names. Please use the name
-        you&apos;d like peers to know you by — first and last.
+        Aapun is built on real people and real names. Please use the name you'd like peers to know you by.
       </p>
-
-      <label
-        htmlFor="full-name"
-        className="mb-2 block text-sm font-medium"
-        style={{ color: c.ink }}
-      >
+      <label htmlFor="full-name" className="mb-2 block text-sm font-medium" style={{ color: c.ink }}>
         Full name
       </label>
       <input
@@ -404,55 +381,32 @@ function StepName({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Your full name"
         className="mb-4 w-full rounded-xl px-4 py-3 text-base outline-none transition-shadow focus:ring-2 focus:ring-[#3a6b5c]/30"
-        style={{
-          color: c.ink,
-          backgroundColor: "#fff",
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: c.border,
-        }}
+        style={{ color: c.ink, backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
       />
-
       <div className="mb-6">
-        <label
-          htmlFor="confirm-adult"
-          className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1"
-        >
+        <label htmlFor="confirm-adult" className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1">
           <input
             id="confirm-adult"
             type="checkbox"
             checked={confirmedAdult}
             onChange={(e) => onConfirmedAdultChange(e.target.checked)}
             aria-required="true"
-            className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 rounded border border-[#d8e4de] outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[#3a6b5c]/35"
+            className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 rounded border border-[#d8e4de] outline-none"
             style={{ accentColor: c.sage }}
           />
-          <span
-            className="text-sm font-medium leading-snug"
-            style={{ color: c.ink }}
-          >
+          <span className="text-sm font-medium leading-snug" style={{ color: c.ink }}>
             I confirm I am 18 years of age or older
           </span>
         </label>
       </div>
-
       <aside
         className="rounded-xl p-4 text-sm leading-relaxed"
-        style={{
-          backgroundColor: c.apricotLight,
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: `${c.apricot}33`,
-        }}
+        style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
         role="note"
       >
-        <p className="font-medium" style={{ color: c.ink }}>
-          Aapun is not therapy or mental health treatment.
-        </p>
+        <p className="font-medium" style={{ color: c.ink }}>Aapun is not therapy or mental health treatment.</p>
         <p className="mt-2" style={{ color: c.inkSoft }}>
-          By creating a profile, you understand that peers on Aapun are not
-          clinicians, and this platform is for mutual support — not diagnosis,
-          treatment, or crisis care.
+          By creating a profile, you understand that peers on Aapun are not clinicians, and this platform is for mutual support — not diagnosis, treatment, or crisis care.
         </p>
       </aside>
     </div>
@@ -462,45 +416,17 @@ function StepName({
 function AmbientBackground() {
   return (
     <>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.sage}22` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.apricot}28` }}
-      />
+      <div aria-hidden className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl" style={{ backgroundColor: `${c.sage}22` }} />
+      <div aria-hidden className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl" style={{ backgroundColor: `${c.apricot}28` }} />
     </>
   );
 }
 
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="15"
-        cy="20"
-        r="11"
-        fill={`${c.sage}33`}
-        stroke={c.sage}
-        strokeWidth="1.5"
-      />
-      <circle
-        cx="25"
-        cy="20"
-        r="11"
-        fill={`${c.apricot}33`}
-        stroke={c.apricot}
-        strokeWidth="1.5"
-      />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
+      <circle cx="15" cy="20" r="11" fill={`${c.sage}33`} stroke={c.sage} strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill={`${c.apricot}33`} stroke={c.apricot} strokeWidth="1.5" />
     </svg>
   );
 }
