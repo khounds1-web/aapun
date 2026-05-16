@@ -22,20 +22,24 @@ const c = {
 } as const;
 
 const EXPERIENCE_CATEGORIES = [
-  "Grief & loss",
-  "Illness",
-  "Divorce & separation",
-  "Career transition",
-  "Parenting",
-  "Addiction & recovery",
-  "Trauma",
-  "Chronic pain",
-  "Disability",
-  "Caregiving",
-  "Immigration & relocation",
-  "Identity & life change",
-  "Loneliness & isolation",
-  "Other",
+  "Planning to conceive soon",
+  "First-time parents",
+  "New moms",
+  "New dads",
+  "Immigrant parents",
+  "Parents balancing careers and parenting",
+  "Single parents",
+  "NICU parents",
+  "Parents after IVF",
+  "Stay-at-home moms/dads",
+  "Parents of neurodivergent children",
+  "Parents of autistic children",
+  "Co-parenting after divorce",
+  "Pregnancy loss & miscarriage",
+  "Postpartum depression",
+  "Parenting with a partner who doesn't share the load",
+  "Hiring a nanny/caregiver",
+  "Other"
 ] as const;
 
 const DESCRIPTION_MAX = 500;
@@ -54,7 +58,6 @@ export default function GetStartedPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Check if user already has a profile
   useEffect(() => {
     if (!isLoaded || !user) return;
 
@@ -127,8 +130,7 @@ export default function GetStartedPage() {
 
   const canContinue =
     (step === 1 && categories.size > 0) ||
-    (step === 2 && !isReturning && description.trim().length >= 20) ||
-    (step === 2 && isReturning && description.trim().length >= 20) ||
+    (step === 2 && description.trim().length >= 20) ||
     (step === 3 && fullName.trim().length >= 2 && confirmedAdult);
 
   const progress = (step / TOTAL_STEPS) * 100;
@@ -276,13 +278,13 @@ function StepCategories({
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        What have you lived through?
+        What's your parenting journey?
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        Choose every area that fits your story. This helps us connect you with peers who share something real.
+        Choose every experience that fits. This helps us connect you with a parent who truly gets it.
       </p>
       <fieldset>
-        <legend className="sr-only">Experience categories</legend>
+        <legend className="sr-only">Parenting experiences</legend>
         <div className="flex flex-wrap gap-2.5">
           {EXPERIENCE_CATEGORIES.map((category) => {
             const isSelected = selected.has(category);
@@ -330,15 +332,15 @@ function StepDescription({
         Tell us your story, in your words
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        A few sentences about what you've been through and what you'd like to talk about with a peer.
+        A few sentences about your parenting experience and what you'd like to talk about with another parent.
       </p>
-      <label htmlFor="experience-description" className="sr-only">Personal experience description</label>
+      <label htmlFor="experience-description" className="sr-only">Your parenting story</label>
       <textarea
         id="experience-description"
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
         rows={6}
-        placeholder="For example: I lost my mother two years ago and I'm still learning how to live with the grief while raising young kids..."
+        placeholder="For example: I'm a first-time mom with a 6-month-old and I'm really struggling with the isolation. I'd love to talk to someone who's been through this…"
         className="w-full resize-y rounded-xl border border-[#d8e4de] bg-white px-4 py-3 text-base leading-relaxed text-[#1c2824] outline-none transition-shadow focus:ring-2 focus:ring-[#3a6b5c]/30"
       />
       <div className="mt-2 flex items-center justify-between text-sm">
@@ -368,7 +370,7 @@ function StepName({
         What should we call you?
       </h1>
       <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-        Aapun is built on real people and real names. Please use the name you'd like peers to know you by.
+        Aapun is built on real people and real names. Please use the name you'd like other parents to know you by.
       </p>
       <label htmlFor="full-name" className="mb-2 block text-sm font-medium" style={{ color: c.ink }}>
         Full name
@@ -404,9 +406,9 @@ function StepName({
         style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
         role="note"
       >
-        <p className="font-medium" style={{ color: c.ink }}>Aapun is not therapy or mental health treatment.</p>
+        <p className="font-medium" style={{ color: c.ink }}>Aapun is not therapy or medical advice.</p>
         <p className="mt-2" style={{ color: c.inkSoft }}>
-          By creating a profile, you understand that peers on Aapun are not clinicians, and this platform is for mutual support — not diagnosis, treatment, or crisis care.
+          Peers on Aapun are not clinicians. This platform is for mutual support between parents — not diagnosis, treatment, or crisis care.
         </p>
       </aside>
     </div>
