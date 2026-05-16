@@ -82,12 +82,17 @@ export default function GetStartedPage() {
         description: description.trim(),
         experienceCategories: Array.from(categories),
       });
+
+      if (result?.error) {
+        setSubmitError(result.error);
+        setIsSubmitting(false);
+        return;
+      }
+
       router.push("/get-started/success");
     } catch (err) {
-      console.error("[get-started] localStorage save failed", err);
-      setSubmitError(
-        "Could not save on this device. Check that browser storage is enabled and try again.",
-      );
+      console.error("[get-started] save failed", err);
+      setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
   }
@@ -132,32 +137,32 @@ export default function GetStartedPage() {
           </div>
 
           <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span style={{ color: c.inkMuted }}>
-                  Step {step} of {TOTAL_STEPS}
-                </span>
-                <span className="font-medium" style={{ color: c.sage }}>
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div
-                className="h-2 overflow-hidden rounded-full"
-                style={{ backgroundColor: c.sageLight }}
-                role="progressbar"
-                aria-valuenow={Math.round(progress)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Profile setup progress"
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-300 ease-out"
-                  style={{
-                    width: `${progress}%`,
-                    backgroundColor: c.sage,
-                  }}
-                />
-              </div>
+            <div className="flex items-center justify-between text-sm">
+              <span style={{ color: c.inkMuted }}>
+                Step {step} of {TOTAL_STEPS}
+              </span>
+              <span className="font-medium" style={{ color: c.sage }}>
+                {Math.round(progress)}%
+              </span>
             </div>
+            <div
+              className="h-2 overflow-hidden rounded-full"
+              style={{ backgroundColor: c.sageLight }}
+              role="progressbar"
+              aria-valuenow={Math.round(progress)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Profile setup progress"
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${progress}%`,
+                  backgroundColor: c.sage,
+                }}
+              />
+            </div>
+          </div>
         </header>
 
         <div
@@ -169,82 +174,80 @@ export default function GetStartedPage() {
             borderColor: c.border,
           }}
         >
-          <>
-              {step === 1 && (
-                <StepCategories
-                  selected={categories}
-                  onToggle={toggleCategory}
-                />
-              )}
-              {step === 2 && (
-                <StepDescription
-                  value={description}
-                  onChange={setDescription}
-                  maxLength={DESCRIPTION_MAX}
-                />
-              )}
-              {step === 3 && (
-                <StepName
-                  value={fullName}
-                  onChange={setFullName}
-                  confirmedAdult={confirmedAdult}
-                  onConfirmedAdultChange={setConfirmedAdult}
-                />
-              )}
+          {step === 1 && (
+            <StepCategories
+              selected={categories}
+              onToggle={toggleCategory}
+            />
+          )}
+          {step === 2 && (
+            <StepDescription
+              value={description}
+              onChange={setDescription}
+              maxLength={DESCRIPTION_MAX}
+            />
+          )}
+          {step === 3 && (
+            <StepName
+              value={fullName}
+              onChange={setFullName}
+              confirmedAdult={confirmedAdult}
+              onConfirmedAdultChange={setConfirmedAdult}
+            />
+          )}
 
-              {submitError && (
-                <p
-                  className="mt-6 rounded-xl px-4 py-3 text-sm leading-relaxed"
-                  style={{
-                    backgroundColor: c.apricotLight,
-                    color: c.ink,
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: `${c.apricot}44`,
-                  }}
-                  role="alert"
-                >
-                  {submitError}
-                </p>
-              )}
+          {submitError && (
+            <p
+              className="mt-6 rounded-xl px-4 py-3 text-sm leading-relaxed"
+              style={{
+                backgroundColor: c.apricotLight,
+                color: c.ink,
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: `${c.apricot}44`,
+              }}
+              role="alert"
+            >
+              {submitError}
+            </p>
+          )}
 
-              <nav className="mt-10 flex items-center justify-between gap-4 border-t pt-8" style={{ borderColor: c.border }}>
-                {step > 1 ? (
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-black/5"
-                    style={{ color: c.inkSoft }}
-                  >
-                    Back
-                  </button>
-                ) : (
-                  <span />
-                )}
+          <nav className="mt-10 flex items-center justify-between gap-4 border-t pt-8" style={{ borderColor: c.border }}>
+            {step > 1 ? (
+              <button
+                type="button"
+                onClick={goBack}
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-black/5"
+                style={{ color: c.inkSoft }}
+              >
+                Back
+              </button>
+            ) : (
+              <span />
+            )}
 
-                {step < TOTAL_STEPS ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    disabled={!canContinue}
-                    className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors enabled:hover:bg-[#2f584b] disabled:cursor-not-allowed disabled:opacity-40"
-                    style={{ backgroundColor: c.sage }}
-                  >
-                    Continue
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!canContinue || isSubmitting}
-                    className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors enabled:hover:bg-[#2f584b] disabled:cursor-not-allowed disabled:opacity-40"
-                    style={{ backgroundColor: c.sage }}
-                  >
-                    {isSubmitting ? "Saving…" : "Create profile"}
-                  </button>
-                )}
-              </nav>
-            </>
+            {step < TOTAL_STEPS ? (
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canContinue}
+                className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors enabled:hover:bg-[#2f584b] disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ backgroundColor: c.sage }}
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!canContinue || isSubmitting}
+                className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors enabled:hover:bg-[#2f584b] disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ backgroundColor: c.sage }}
+              >
+                {isSubmitting ? "Saving…" : "Create profile"}
+              </button>
+            )}
+          </nav>
         </div>
       </main>
     </div>
@@ -422,9 +425,7 @@ function StepName({
             onChange={(e) => onConfirmedAdultChange(e.target.checked)}
             aria-required="true"
             className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 rounded border border-[#d8e4de] outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[#3a6b5c]/35"
-            style={{
-              accentColor: c.sage,
-            }}
+            style={{ accentColor: c.sage }}
           />
           <span
             className="text-sm font-medium leading-snug"
