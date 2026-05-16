@@ -1,7 +1,8 @@
 "use client";
 
-import { saveProfile } from "@/app/get-started/actions";
-import { createClient } from "@/utils/supabase/client";
+import { saveTempGetStartedProfile } from "@/app/get-started/temp-profile-storage";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const c = {
@@ -40,25 +41,17 @@ const DESCRIPTION_MAX = 500;
 
 type Step = 1 | 2 | 3;
 
-function logClientError(context: string, err: unknown) {
-  const payload =
-    err instanceof Error
-      ? { message: err.message, stack: err.stack, name: err.name }
-      : { value: err };
-  console.error(`[${context}]`, payload);
-}
-
 export default function GetStartedPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [categories, setCategories] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
   const [fullName, setFullName] = useState("");
   const [confirmedAdult, setConfirmedAdult] = useState(false);
-  const [completed, setCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const progress = completed ? 100 : (step / TOTAL_STEPS) * 100;
+  const progress = (step / TOTAL_STEPS) * 100;
 
   function toggleCategory(category: string) {
     setCategories((prev) => {
@@ -77,74 +70,24 @@ export default function GetStartedPage() {
     if (step > 1) setStep((step - 1) as Step);
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!canContinue || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      let supabase: ReturnType<typeof createClient>;
-      try {
-        supabase = createClient();
-      } catch (err) {
-        logClientError("get-started/createClient", err);
-        setSubmitError(
-          "Could not connect to the app services. Check environment configuration.",
-        );
-        return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        const { error: authError } = await supabase.auth.signInAnonymously();
-        if (authError) {
-          logClientError("get-started/signInAnonymously", authError);
-          setSubmitError(
-            authError.message.includes("anonymous")
-              ? "Anonymous sign-in is disabled. Enable it in Supabase → Authentication → Providers."
-              : "Could not start your session. Please try again.",
-          );
-          return;
-        }
-      }
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        logClientError("get-started/getSession", sessionError);
-      }
-
-      if (!session) {
-        console.error("[get-started] no session before saveProfile");
-        setSubmitError(
-          "Could not establish your session. Please refresh and try again.",
-        );
-        return;
-      }
-
-      const result = await saveProfile({
+      saveTempGetStartedProfile({
         fullName: fullName.trim(),
         description: description.trim(),
         experienceCategories: Array.from(categories),
       });
-
-      if (!result.success) {
-        setSubmitError(result.error);
-        return;
-      }
-
-      setCompleted(true);
+      router.push("/get-started/success");
     } catch (err) {
-      logClientError("get-started/handleSubmit", err);
-      setSubmitError("Something went wrong. Please try again.");
-    } finally {
+      console.error("[get-started] localStorage save failed", err);
+      setSubmitError(
+        "Could not save on this device. Check that browser storage is enabled and try again.",
+      );
       setIsSubmitting(false);
     }
   }
@@ -165,13 +108,13 @@ export default function GetStartedPage() {
 
       <main className="relative mx-auto flex min-h-full max-w-xl flex-col px-6 py-10 sm:px-8 sm:py-14">
         <header className="mb-8">
-          <a
+          <Link
             href="/"
             className="mb-6 inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-70"
             style={{ color: c.inkMuted }}
           >
             <span aria-hidden>←</span> Back to home
-          </a>
+          </Link>
 
           <div className="mb-6 flex items-center gap-3">
             <AapunMark size={36} />
@@ -188,8 +131,7 @@ export default function GetStartedPage() {
             </div>
           </div>
 
-          {!completed && (
-            <div className="space-y-2">
+          <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: c.inkMuted }}>
                   Step {step} of {TOTAL_STEPS}
@@ -216,7 +158,6 @@ export default function GetStartedPage() {
                 />
               </div>
             </div>
-          )}
         </header>
 
         <div
@@ -228,10 +169,7 @@ export default function GetStartedPage() {
             borderColor: c.border,
           }}
         >
-          {completed ? (
-            <CompletionView fullName={fullName.trim()} />
-          ) : (
-            <>
+          <>
               {step === 1 && (
                 <StepCategories
                   selected={categories}
@@ -307,7 +245,6 @@ export default function GetStartedPage() {
                 )}
               </nav>
             </>
-          )}
         </div>
       </main>
     </div>
@@ -517,39 +454,6 @@ function StepName({
           treatment, or crisis care.
         </p>
       </aside>
-    </div>
-  );
-}
-
-function CompletionView({ fullName }: { fullName: string }) {
-  const firstName = fullName.split(/\s+/)[0] || fullName;
-
-  return (
-    <div className="py-4 text-center">
-      <div
-        className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full text-2xl"
-        style={{ backgroundColor: c.sageLight, color: c.sage }}
-        aria-hidden
-      >
-        ✓
-      </div>
-      <h1
-        className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl"
-        style={{ color: c.ink }}
-      >
-        Welcome, {firstName}
-      </h1>
-      <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        Your profile is ready. When matching and scheduling are live,
-        you&apos;ll hear from us. For now, thank you for showing up as yourself.
-      </p>
-      <a
-        href="/"
-        className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
-        style={{ backgroundColor: c.sage }}
-      >
-        Back to home
-      </a>
     </div>
   );
 }
