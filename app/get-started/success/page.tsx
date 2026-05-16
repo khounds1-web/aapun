@@ -44,6 +44,8 @@ export default function GetStartedSuccessPage() {
       .from("profiles")
       .select("full_name, description, experience_categories")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single()
       .then(({ data, error }) => {
         if (error) console.error("Supabase fetch error:", error);
@@ -61,7 +63,6 @@ export default function GetStartedSuccessPage() {
       style={{ backgroundColor: c.bg, color: c.inkSoft }}
     >
       <AmbientBackground />
-
       <main className="relative mx-auto flex min-h-full max-w-xl flex-col px-6 py-10 sm:px-8 sm:py-14">
         <header className="mb-8">
           <Link
@@ -71,16 +72,10 @@ export default function GetStartedSuccessPage() {
           >
             <span aria-hidden>←</span> Back to home
           </Link>
-
           <div className="flex items-center gap-3">
             <AapunMark size={36} />
             <div>
-              <p
-                className="text-lg font-semibold tracking-tight"
-                style={{ color: c.ink }}
-              >
-                Aapun
-              </p>
+              <p className="text-lg font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</p>
               <p className="text-sm" style={{ color: c.inkMuted }}>
                 <span className="italic">my own</span> — in Assamese
               </p>
@@ -90,17 +85,10 @@ export default function GetStartedSuccessPage() {
 
         <div
           className="flex flex-1 flex-col rounded-2xl p-6 shadow-sm backdrop-blur-sm sm:p-8"
-          style={{
-            backgroundColor: c.card,
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: c.border,
-          }}
+          style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
         >
           {loading ? (
-            <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>
-              Loading…
-            </p>
+            <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>Loading…</p>
           ) : profile ? (
             <div className="py-4 text-center">
               <div
@@ -110,30 +98,32 @@ export default function GetStartedSuccessPage() {
               >
                 ✓
               </div>
-              <h1
-                className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl"
-                style={{ color: c.ink }}
-              >
+              <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
                 Welcome, {firstName}
               </h1>
               <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-                Your profile has been saved. We'll be in touch when we find you
-                a peer who truly gets it.
+                Your topic has been saved. We'll find you a peer who truly gets it.
               </p>
-              <Link
-                href="/"
-                className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
-                style={{ backgroundColor: c.sage }}
-              >
-                Back to home
-              </Link>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
+                  style={{ backgroundColor: c.sage }}
+                >
+                  Go to my dashboard
+                </Link>
+                <Link
+                  href="/get-started"
+                  className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium transition-colors hover:bg-black/5"
+                  style={{ color: c.inkSoft }}
+                >
+                  + Add another topic
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="py-6 text-center">
-              <h1
-                className="mb-3 text-xl font-semibold tracking-tight"
-                style={{ color: c.ink }}
-              >
+              <h1 className="mb-3 text-xl font-semibold tracking-tight" style={{ color: c.ink }}>
                 No profile found
               </h1>
               <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
@@ -157,45 +147,17 @@ export default function GetStartedSuccessPage() {
 function AmbientBackground() {
   return (
     <>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.sage}22` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.apricot}28` }}
-      />
+      <div aria-hidden className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl" style={{ backgroundColor: `${c.sage}22` }} />
+      <div aria-hidden className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl" style={{ backgroundColor: `${c.apricot}28` }} />
     </>
   );
 }
 
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="15"
-        cy="20"
-        r="11"
-        fill={`${c.sage}33`}
-        stroke={c.sage}
-        strokeWidth="1.5"
-      />
-      <circle
-        cx="25"
-        cy="20"
-        r="11"
-        fill={`${c.apricot}33`}
-        stroke={c.apricot}
-        strokeWidth="1.5"
-      />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
+      <circle cx="15" cy="20" r="11" fill={`${c.sage}33`} stroke={c.sage} strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill={`${c.apricot}33`} stroke={c.apricot} strokeWidth="1.5" />
     </svg>
   );
 }
