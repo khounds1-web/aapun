@@ -58,7 +58,10 @@ export default function GetStartedPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user) {
+      setLoadingUser(false);
+      return;
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,11 +72,11 @@ export default function GetStartedPage() {
       .from("profiles")
       .select("full_name")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
       .limit(1)
-      .single()
       .then(({ data }) => {
-        if (data?.full_name) {
-          setExistingName(data.full_name);
+        if (data && data.length > 0 && data[0]?.full_name) {
+          setExistingName(data[0].full_name);
         }
         setLoadingUser(false);
       });
@@ -277,7 +280,7 @@ function StepCategories({
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        Where are your in your parenting journey?
+        Where are you in your parenting journey?
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
         Choose every experience that fits. This helps us connect you with a parent who truly gets it.
