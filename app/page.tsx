@@ -27,7 +27,7 @@ const router = useRouter();
 
 useEffect(() => {
   if (isSignedIn) {
-    router.push("/get-started");
+    router.push("/dashboard");
   }
 }, [isSignedIn]);
   return (
