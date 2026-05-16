@@ -1,6 +1,6 @@
 "use client";
 
-import { saveTempGetStartedProfile } from "@/app/get-started/temp-profile-storage";
+import { saveProfile } from "@/app/get-started/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -70,14 +70,14 @@ export default function GetStartedPage() {
     if (step > 1) setStep((step - 1) as Step);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!canContinue || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      saveTempGetStartedProfile({
+      const result = await saveProfile({
         fullName: fullName.trim(),
         description: description.trim(),
         experienceCategories: Array.from(categories),
