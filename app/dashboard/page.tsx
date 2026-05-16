@@ -47,11 +47,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!user) {
-      router.push("/");
-      return;
-    }
-
+    if (!user) { router.push("/"); return; }
     loadTopics();
   }, [isLoaded, user]);
 
@@ -87,10 +83,7 @@ export default function DashboardPage() {
   const firstName = topics[0]?.full_name?.trim().split(/\s+/)[0] || "there";
 
   return (
-    <div
-      className="relative min-h-full overflow-hidden font-sans"
-      style={{ backgroundColor: c.bg, color: c.inkSoft }}
-    >
+    <div className="relative min-h-full overflow-hidden font-sans" style={{ backgroundColor: c.bg, color: c.inkSoft }}>
       <AmbientBackground />
 
       <main className="relative mx-auto flex min-h-full max-w-2xl flex-col px-6 py-10 sm:px-8 sm:py-14">
@@ -206,9 +199,11 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <p className="mb-4 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
-                  {topic.description}
-                </p>
+                {topic.description && (
+                  <p className="mb-4 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
+                    {topic.description}
+                  </p>
+                )}
 
                 {topic.matched_with && topic.match_id ? (
                   <div
@@ -229,11 +224,19 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div
-                    className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+                    className="rounded-xl px-4 py-3 text-sm"
                     style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
                   >
-                    <span style={{ color: c.apricot }}>◎</span>
-                    <span style={{ color: c.ink }}>Watching for a match — we'll let you know.</span>
+                    <p style={{ color: c.ink }}>
+                      <span style={{ color: c.apricot }}>◎</span> Watching for a match — can AI help in the meantime?
+                    </p>
+                    <Link
+                      href={`/ai-chat/${topic.id}`}
+                      className="mt-3 inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-[#2f584b] text-white"
+                      style={{ backgroundColor: c.apricot }}
+                    >
+                      Chat with Aapun AI
+                    </Link>
                   </div>
                 )}
               </div>
