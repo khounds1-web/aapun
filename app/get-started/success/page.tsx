@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  readTempGetStartedProfile,
-  type TempGetStartedProfile,
-} from "@/app/get-started/temp-profile-storage";
+import { useUser } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 const c = {
   bg: "#f6f4ef",
@@ -20,20 +18,38 @@ const c = {
   apricot: "#c97a52",
 } as const;
 
+type Profile = {
+  full_name: string;
+  description: string;
+  experience_categories: string[];
+};
+
 export default function GetStartedSuccessPage() {
-  const [mounted, setMounted] = useState(false);
+  const { user, isLoaded } = useUser();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    queueMicrotask(() => setMounted(true));
-  }, []);
+    if (!isLoaded || !user) return;
 
-  const profile: TempGetStartedProfile | null = mounted
-    ? readTempGetStartedProfile()
-    : null;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-  const trimmed = profile?.fullName.trim() ?? "";
+    supabase
+      .from("profiles")
+      .select("full_name, description, experience_categories")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        setProfile(data);
+        setLoading(false);
+      });
+  }, [isLoaded, user]);
+
   const firstName =
-    trimmed.split(/\s+/).filter(Boolean)[0] || trimmed || "there";
+    profile?.full_name?.trim().split(/\s+/)[0] || "there";
 
   return (
     <div
@@ -77,7 +93,7 @@ export default function GetStartedSuccessPage() {
             borderColor: c.border,
           }}
         >
-          {!mounted ? (
+          {loading ? (
             <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>
               Loading…
             </p>
@@ -96,22 +112,9 @@ export default function GetStartedSuccessPage() {
               >
                 Welcome, {firstName}
               </h1>
-              <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-                Your answers are saved on this device for now. When accounts are
-                ready, you&apos;ll be able to sign in and keep your profile.
-              </p>
-              <p
-                className="mb-8 rounded-xl px-4 py-3 text-sm leading-relaxed"
-                style={{
-                  backgroundColor: c.apricotLight,
-                  color: c.inkSoft,
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: `${c.apricot}33`,
-                }}
-              >
-                This profile is stored only in your browser (localStorage). Clearing
-                site data or using another device won&apos;t include it.
+              <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
+                Your profile has been saved. We'll be in touch when we find you
+                a peer who truly gets it.
               </p>
               <Link
                 href="/"
@@ -130,7 +133,7 @@ export default function GetStartedSuccessPage() {
                 No profile found
               </h1>
               <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-                Start from the beginning to create your profile on this device.
+                Start from the beginning to create your profile.
               </p>
               <Link
                 href="/get-started"
