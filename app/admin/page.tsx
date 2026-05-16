@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { notifyMatch } from "@/app/get-started/actions";
 
 const ADMIN_PASSWORD = "Ontosomething";
 
@@ -76,29 +77,28 @@ export default function AdminPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Generate a shared match_id
     const matchId = `${selectedA.id}-${selectedB.id}`;
     const message = "We found you a match!";
 
     await supabase
       .from("profiles")
-      .update({
-        match_status: message,
-        matched_with: selectedB.full_name,
-        match_id: matchId,
-      })
+      .update({ match_status: message, matched_with: selectedB.full_name, match_id: matchId })
       .eq("id", selectedA.id);
 
     await supabase
       .from("profiles")
-      .update({
-        match_status: message,
-        matched_with: selectedA.full_name,
-        match_id: matchId,
-      })
+      .update({ match_status: message, matched_with: selectedA.full_name, match_id: matchId })
       .eq("id", selectedB.id);
 
-    setSuccessMessage(`✓ Matched ${selectedA.full_name} with ${selectedB.full_name}`);
+    // Send email notifications to both users
+    await notifyMatch(
+      selectedA.user_id,
+      selectedB.user_id,
+      selectedA.full_name,
+      selectedB.full_name
+    );
+
+    setSuccessMessage(`✓ Matched ${selectedA.full_name} with ${selectedB.full_name} — emails sent!`);
     setSelectedA(null);
     setSelectedB(null);
     setMatching(false);
@@ -107,17 +107,12 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <div
-        className="flex min-h-full items-center justify-center font-sans"
-        style={{ backgroundColor: c.bg }}
-      >
+      <div className="flex min-h-full items-center justify-center font-sans" style={{ backgroundColor: c.bg }}>
         <div
           className="w-full max-w-sm rounded-2xl p-8 shadow-sm"
           style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
         >
-          <h1 className="mb-6 text-xl font-semibold" style={{ color: c.ink }}>
-            Admin access
-          </h1>
+          <h1 className="mb-6 text-xl font-semibold" style={{ color: c.ink }}>Admin access</h1>
           <input
             type="password"
             value={password}
@@ -125,17 +120,9 @@ export default function AdminPage() {
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             placeholder="Password"
             className="mb-3 w-full rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
-            style={{
-              backgroundColor: "#fff",
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: passwordError ? c.apricot : c.border,
-              color: c.ink,
-            }}
+            style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: passwordError ? c.apricot : c.border, color: c.ink }}
           />
-          {passwordError && (
-            <p className="mb-3 text-sm" style={{ color: c.apricot }}>Incorrect password</p>
-          )}
+          {passwordError && <p className="mb-3 text-sm" style={{ color: c.apricot }}>Incorrect password</p>}
           <button
             onClick={handleLogin}
             className="w-full rounded-full py-3 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
@@ -153,20 +140,13 @@ export default function AdminPage() {
       <main className="mx-auto max-w-4xl px-6 py-10 sm:px-8 sm:py-14">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-2xl font-semibold" style={{ color: c.ink }}>Aapun Admin</h1>
-          <button
-            onClick={loadProfiles}
-            className="rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
-            style={{ color: c.inkSoft }}
-          >
+          <button onClick={loadProfiles} className="rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5" style={{ color: c.inkSoft }}>
             Refresh
           </button>
         </div>
 
         {successMessage && (
-          <div
-            className="mb-6 rounded-xl px-4 py-3 text-sm"
-            style={{ backgroundColor: c.sageLight, color: c.sage }}
-          >
+          <div className="mb-6 rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: c.sageLight, color: c.sage }}>
             {successMessage}
           </div>
         )}
@@ -186,7 +166,7 @@ export default function AdminPage() {
                 className="rounded-full px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2f584b] disabled:opacity-50"
                 style={{ backgroundColor: c.sage }}
               >
-                {matching ? "Matching…" : "Confirm match"}
+                {matching ? "Matching…" : "Confirm match & notify"}
               </button>
               <button
                 onClick={() => { setSelectedA(null); setSelectedB(null); }}
@@ -217,22 +197,15 @@ export default function AdminPage() {
                 <div className="mb-2 flex items-start justify-between gap-4">
                   <div>
                     <p className="font-semibold" style={{ color: c.ink }}>{profile.full_name}</p>
-                    <p className="text-xs" style={{ color: c.inkMuted }}>
-                      {new Date(profile.created_at).toLocaleDateString()}
-                    </p>
+                    <p className="text-xs" style={{ color: c.inkMuted }}>{new Date(profile.created_at).toLocaleDateString()}</p>
                   </div>
                   <button
                     onClick={() => {
                       setSuccessMessage(null);
-                      if (selectedA?.id === profile.id) {
-                        setSelectedA(null);
-                      } else if (selectedB?.id === profile.id) {
-                        setSelectedB(null);
-                      } else if (!selectedA) {
-                        setSelectedA(profile);
-                      } else if (!selectedB) {
-                        setSelectedB(profile);
-                      }
+                      if (selectedA?.id === profile.id) setSelectedA(null);
+                      else if (selectedB?.id === profile.id) setSelectedB(null);
+                      else if (!selectedA) setSelectedA(profile);
+                      else if (!selectedB) setSelectedB(profile);
                     }}
                     className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
                     style={
@@ -247,24 +220,20 @@ export default function AdminPage() {
 
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {profile.experience_categories.map((cat) => (
-                    <span
-                      key={cat}
-                      className="rounded-full px-2.5 py-0.5 text-xs"
-                      style={{ backgroundColor: c.sageLight, color: c.sage }}
-                    >
+                    <span key={cat} className="rounded-full px-2.5 py-0.5 text-xs" style={{ backgroundColor: c.sageLight, color: c.sage }}>
                       {cat}
                     </span>
                   ))}
                 </div>
 
-                <p className="mb-3 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
-                  {profile.description}
-                </p>
+                {profile.description && (
+                  <p className="mb-3 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
+                    {profile.description}
+                  </p>
+                )}
 
                 {profile.matched_with ? (
-                  <p className="text-xs font-medium" style={{ color: c.sage }}>
-                    ✓ Matched with {profile.matched_with} — Chat ID: {profile.match_id}
-                  </p>
+                  <p className="text-xs font-medium" style={{ color: c.sage }}>✓ Matched with {profile.matched_with}</p>
                 ) : (
                   <p className="text-xs" style={{ color: c.inkMuted }}>Not yet matched</p>
                 )}

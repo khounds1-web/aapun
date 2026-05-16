@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import { notifyMessage } from "@/app/get-started/actions";
 
 const c = {
   bg: "#f6f4ef",
@@ -31,42 +32,27 @@ type Message = {
   created_at: string;
 };
 
-function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+type MatchInfo = {
+  recipient_user_id: string;
+  recipient_name: string;
+};
 
-  const colors = [
-    "#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b",
-    "#6b5c3a", "#3a3a6b", "#6b3a3a",
-  ];
+function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
+  const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  const colors = ["#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b", "#6b5c3a", "#3a3a6b", "#6b3a3a"];
   const color = colors[name.charCodeAt(0) % colors.length];
 
   if (photo) {
     return (
-      <img
-        src={photo}
-        alt={name}
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
-      />
+      <img src={photo} alt={name} width={size} height={size}
+        className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />
     );
   }
 
   return (
     <div
       className="flex shrink-0 items-center justify-center rounded-full text-white font-medium"
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: color,
-        fontSize: size * 0.35,
-      }}
+      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.35 }}
     >
       {initials}
     </div>
@@ -83,6 +69,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [senderName, setSenderName] = useState("");
+  const [matchInfo, setMatchInfo] = useState<MatchInfo | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
@@ -94,20 +81,35 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!user) {
-      router.push("/");
-      return;
-    }
+    if (!user) { router.push("/"); return; }
 
-    // Get sender name from profiles
+    // Get current user's name and match info
     supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, matched_with, match_id")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
+      .eq("match_id", matchId)
       .limit(1)
       .then(({ data }) => {
-        if (data && data.length > 0) setSenderName(data[0].full_name);
+        if (data && data.length > 0) {
+          setSenderName(data[0].full_name);
+        }
+      });
+
+    // Get the other person's info for notifications
+    supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .eq("match_id", matchId)
+      .neq("user_id", user.id)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setMatchInfo({
+            recipient_user_id: data[0].user_id,
+            recipient_name: data[0].full_name,
+          });
+        }
       });
 
     // Load existing messages
@@ -116,37 +118,26 @@ export default function ChatPage() {
       .select("*")
       .eq("match_id", matchId)
       .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        setMessages(data || []);
-      });
+      .then(({ data }) => { setMessages(data || []); });
 
-    // Subscribe to new messages in real time
+    // Subscribe to real-time messages
     const channel = supabase
       .channel(`chat:${matchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `match_id=eq.${matchId}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-        }
-      )
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "messages",
+        filter: `match_id=eq.${matchId}`,
+      }, (payload) => {
+        setMessages((prev) => [...prev, payload.new as Message]);
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [isLoaded, user, matchId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Close emoji picker when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
@@ -174,25 +165,27 @@ export default function ChatPage() {
       content: newMessage.trim(),
     });
 
+    // Notify the recipient
+    if (matchInfo) {
+      await notifyMessage(
+        matchInfo.recipient_user_id,
+        matchInfo.recipient_name,
+        senderName || "Your match",
+        matchId
+      );
+    }
+
     setNewMessage("");
     setSending(false);
   }
 
   return (
-    <div
-      className="flex min-h-full flex-col font-sans"
-      style={{ backgroundColor: c.bg }}
-    >
-      {/* Header */}
+    <div className="flex min-h-full flex-col font-sans" style={{ backgroundColor: c.bg }}>
       <header
         className="flex shrink-0 items-center gap-4 border-b px-6 py-4"
         style={{ backgroundColor: c.card, borderColor: c.border }}
       >
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium transition-opacity hover:opacity-70"
-          style={{ color: c.inkMuted }}
-        >
+        <Link href="/dashboard" className="text-sm font-medium transition-opacity hover:opacity-70" style={{ color: c.inkMuted }}>
           ← Back
         </Link>
         <div className="flex items-center gap-2">
@@ -201,7 +194,6 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
           {messages.length === 0 && (
@@ -212,30 +204,17 @@ export default function ChatPage() {
           {messages.map((msg) => {
             const isMe = msg.sender_id === user?.id;
             return (
-              <div
-                key={msg.id}
-                className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-              >
-                <Avatar
-                  name={msg.sender_name}
-                  photo={msg.sender_photo}
-                  size={32}
-                />
+              <div key={msg.id} className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                <Avatar name={msg.sender_name} photo={msg.sender_photo} size={32} />
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    isMe ? "rounded-br-sm" : "rounded-bl-sm"
-                  }`}
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isMe ? "rounded-br-sm" : "rounded-bl-sm"}`}
                   style={
                     isMe
                       ? { backgroundColor: c.sage, color: "#fff" }
                       : { backgroundColor: c.card, color: c.ink, borderWidth: 1, borderStyle: "solid", borderColor: c.border }
                   }
                 >
-                  {!isMe && (
-                    <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>
-                      {msg.sender_name}
-                    </p>
-                  )}
+                  {!isMe && <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>{msg.sender_name}</p>}
                   {msg.content}
                 </div>
               </div>
@@ -245,34 +224,17 @@ export default function ChatPage() {
         </div>
       </main>
 
-      {/* Input */}
-      <footer
-        className="shrink-0 border-t px-6 py-4"
-        style={{ backgroundColor: c.card, borderColor: c.border }}
-      >
+      <footer className="shrink-0 border-t px-6 py-4" style={{ backgroundColor: c.card, borderColor: c.border }}>
         <div className="mx-auto w-full max-w-2xl">
-          {/* Emoji Picker */}
           {showEmojiPicker && (
             <div ref={emojiRef} className="mb-2">
-              <EmojiPicker
-                onEmojiClick={onEmojiClick}
-                theme={Theme.LIGHT}
-                width="100%"
-                height={350}
-              />
+              <EmojiPicker onEmojiClick={onEmojiClick} theme={Theme.LIGHT} width="100%" height={350} />
             </div>
           )}
-
           <div className="flex gap-3 items-center">
-            {/* Emoji button */}
-            <button
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-xl transition-opacity hover:opacity-70"
-              aria-label="Add emoji"
-            >
+            <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="text-xl transition-opacity hover:opacity-70" aria-label="Add emoji">
               😊
             </button>
-
             <input
               type="text"
               value={newMessage}
@@ -280,13 +242,7 @@ export default function ChatPage() {
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
               placeholder="Say something…"
               className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
-              style={{
-                backgroundColor: "#fff",
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: c.border,
-                color: c.ink,
-              }}
+              style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink }}
             />
             <button
               onClick={sendMessage}
