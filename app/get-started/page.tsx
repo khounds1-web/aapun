@@ -277,7 +277,7 @@ function StepCategories({
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        What's your parenting journey?
+        Where are your in your parenting journey?
       </h1>
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
         Choose every experience that fits. This helps us connect you with a parent who truly gets it.
