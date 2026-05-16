@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 
 const c = {
   bg: "#f6f4ef",
@@ -25,9 +26,52 @@ type Message = {
   match_id: string;
   sender_id: string;
   sender_name: string;
+  sender_photo?: string;
   content: string;
   created_at: string;
 };
+
+function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const colors = [
+    "#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b",
+    "#6b5c3a", "#3a3a6b", "#6b3a3a",
+  ];
+  const color = colors[name.charCodeAt(0) % colors.length];
+
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={name}
+        width={size}
+        height={size}
+        className="rounded-full object-cover shrink-0"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full text-white font-medium"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: color,
+        fontSize: size * 0.35,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 export default function ChatPage() {
   const { user, isLoaded } = useUser();
@@ -39,7 +83,9 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [senderName, setSenderName] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,10 +104,10 @@ export default function ChatPage() {
       .from("profiles")
       .select("full_name")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
       .limit(1)
-      .single()
       .then(({ data }) => {
-        if (data?.full_name) setSenderName(data.full_name);
+        if (data && data.length > 0) setSenderName(data[0].full_name);
       });
 
     // Load existing messages
@@ -100,6 +146,22 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function onEmojiClick(emojiData: EmojiClickData) {
+    setNewMessage((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  }
+
   async function sendMessage() {
     if (!newMessage.trim() || !user || sending) return;
     setSending(true);
@@ -108,6 +170,7 @@ export default function ChatPage() {
       match_id: matchId,
       sender_id: user.id,
       sender_name: senderName || "You",
+      sender_photo: user.imageUrl || null,
       content: newMessage.trim(),
     });
 
@@ -140,10 +203,10 @@ export default function ChatPage() {
 
       {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
-        <div className="mx-auto w-full max-w-2xl space-y-3">
+        <div className="mx-auto w-full max-w-2xl space-y-4">
           {messages.length === 0 && (
             <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>
-              Say hi — your match will see it when they log in.
+              Say hi — your match will see it when they log in. 👋
             </p>
           )}
           {messages.map((msg) => {
@@ -151,10 +214,17 @@ export default function ChatPage() {
             return (
               <div
                 key={msg.id}
-                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
               >
+                <Avatar
+                  name={msg.sender_name}
+                  photo={msg.sender_photo}
+                  size={32}
+                />
                 <div
-                  className="max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    isMe ? "rounded-br-sm" : "rounded-bl-sm"
+                  }`}
                   style={
                     isMe
                       ? { backgroundColor: c.sage, color: "#fff" }
@@ -180,30 +250,53 @@ export default function ChatPage() {
         className="shrink-0 border-t px-6 py-4"
         style={{ backgroundColor: c.card, borderColor: c.border }}
       >
-        <div className="mx-auto flex w-full max-w-2xl gap-3">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-            placeholder="Say something…"
-            className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
-            style={{
-              backgroundColor: "#fff",
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: c.border,
-              color: c.ink,
-            }}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || sending}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-[#2f584b] disabled:opacity-40"
-            style={{ backgroundColor: c.sage }}
-          >
-            ↑
-          </button>
+        <div className="mx-auto w-full max-w-2xl">
+          {/* Emoji Picker */}
+          {showEmojiPicker && (
+            <div ref={emojiRef} className="mb-2">
+              <EmojiPicker
+                onEmojiClick={onEmojiClick}
+                theme={Theme.LIGHT}
+                width="100%"
+                height={350}
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3 items-center">
+            {/* Emoji button */}
+            <button
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className="text-xl transition-opacity hover:opacity-70"
+              aria-label="Add emoji"
+            >
+              😊
+            </button>
+
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+              placeholder="Say something…"
+              className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
+              style={{
+                backgroundColor: "#fff",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: c.border,
+                color: c.ink,
+              }}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!newMessage.trim() || sending}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-[#2f584b] disabled:opacity-40"
+              style={{ backgroundColor: c.sage }}
+            >
+              ↑
+            </button>
+          </div>
         </div>
       </footer>
     </div>
