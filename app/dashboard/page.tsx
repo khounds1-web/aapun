@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearingAll, setClearingAll] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [insights, setInsights] = useState<Record<string, string>>({});
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,8 +61,28 @@ export default function DashboardPage() {
       .order("created_at", { ascending: false });
 
     if (error) console.error("Supabase fetch error:", error);
-    setTopics(data || []);
+    const topicsData = data || [];
+    setTopics(topicsData);
     setLoading(false);
+
+    // Generate insights for unmatched topics
+    topicsData.forEach(async (topic) => {
+      if (!topic.matched_with && topic.experience_categories.length > 0) {
+        try {
+          const res = await fetch("/api/topic-insight", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ categories: topic.experience_categories }),
+          });
+          const data = await res.json();
+          if (data.content) {
+            setInsights((prev) => ({ ...prev, [topic.id]: data.content }));
+          }
+        } catch (err) {
+          console.error("Insight fetch error:", err);
+        }
+      }
+    });
   }
 
   async function deleteTopic(id: string) {
@@ -123,28 +144,18 @@ export default function DashboardPage() {
               confirmClearAll ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs" style={{ color: c.inkMuted }}>Are you sure?</span>
-                  <button
-                    onClick={clearAllTopics}
-                    disabled={clearingAll}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors"
-                    style={{ backgroundColor: c.apricot }}
-                  >
+                  <button onClick={clearAllTopics} disabled={clearingAll}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-white" style={{ backgroundColor: c.apricot }}>
                     {clearingAll ? "Clearing…" : "Yes, clear all"}
                   </button>
-                  <button
-                    onClick={() => setConfirmClearAll(false)}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
-                    style={{ color: c.inkMuted }}
-                  >
+                  <button onClick={() => setConfirmClearAll(false)}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium hover:bg-black/5" style={{ color: c.inkMuted }}>
                     Cancel
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setConfirmClearAll(true)}
-                  className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
-                  style={{ color: c.inkMuted }}
-                >
+                <button onClick={() => setConfirmClearAll(true)}
+                  className="rounded-full px-3 py-1.5 text-xs font-medium hover:bg-black/5" style={{ color: c.inkMuted }}>
                   Clear all
                 </button>
               )
@@ -155,46 +166,33 @@ export default function DashboardPage() {
         {loading ? (
           <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>Loading…</p>
         ) : topics.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 text-center shadow-sm backdrop-blur-sm"
-            style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
-          >
+          <div className="rounded-2xl p-8 text-center shadow-sm backdrop-blur-sm"
+            style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
             <p className="mb-4 text-lg font-medium" style={{ color: c.ink }}>No topics yet</p>
             <p className="mb-6 text-sm" style={{ color: c.inkMuted }}>Add your first topic to start finding a peer.</p>
-            <Link
-              href="/get-started"
-              className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
-              style={{ backgroundColor: c.sage }}
-            >
+            <Link href="/get-started"
+              className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md hover:bg-[#2f584b]"
+              style={{ backgroundColor: c.sage }}>
               Get started
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
             {topics.map((topic) => (
-              <div
-                key={topic.id}
-                className="rounded-2xl p-6 shadow-sm backdrop-blur-sm"
-                style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
-              >
+              <div key={topic.id} className="rounded-2xl p-6 shadow-sm backdrop-blur-sm"
+                style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+
                 <div className="mb-3 flex items-start justify-between gap-4">
                   <div className="flex flex-wrap gap-2">
                     {topic.experience_categories.map((cat) => (
-                      <span
-                        key={cat}
-                        className="rounded-full px-3 py-1 text-xs font-medium"
-                        style={{ backgroundColor: c.sageLight, color: c.sage }}
-                      >
+                      <span key={cat} className="rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ backgroundColor: c.sageLight, color: c.sage }}>
                         {cat}
                       </span>
                     ))}
                   </div>
-                  <button
-                    onClick={() => deleteTopic(topic.id)}
-                    disabled={deletingId === topic.id}
-                    className="shrink-0 text-xs transition-opacity hover:opacity-70 disabled:opacity-40"
-                    style={{ color: c.inkMuted }}
-                  >
+                  <button onClick={() => deleteTopic(topic.id)} disabled={deletingId === topic.id}
+                    className="shrink-0 text-xs hover:opacity-70 disabled:opacity-40" style={{ color: c.inkMuted }}>
                     {deletingId === topic.id ? "Deleting…" : "✕"}
                   </button>
                 </div>
@@ -206,37 +204,39 @@ export default function DashboardPage() {
                 )}
 
                 {topic.matched_with && topic.match_id ? (
-                  <div
-                    className="rounded-xl px-4 py-3 text-sm"
-                    style={{ backgroundColor: c.sageLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.sage}33` }}
-                  >
+                  <div className="rounded-xl px-4 py-3 text-sm"
+                    style={{ backgroundColor: c.sageLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.sage}33` }}>
                     <p className="font-medium" style={{ color: c.sage }}>✓ We found you a match!</p>
                     <p className="mt-1 mb-3" style={{ color: c.inkSoft }}>
                       You've been matched with <strong>{topic.matched_with}</strong>.
                     </p>
-                    <Link
-                      href={`/chat/${topic.match_id}`}
-                      className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
-                      style={{ backgroundColor: c.sage }}
-                    >
+                    <Link href={`/chat/${topic.match_id}`}
+                      className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white hover:bg-[#2f584b]"
+                      style={{ backgroundColor: c.sage }}>
                       Say hi →
                     </Link>
                   </div>
                 ) : (
-                  <div
-                    className="rounded-xl px-4 py-3 text-sm"
-                    style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
-                  >
-                    <p style={{ color: c.ink }}>
-                      <span style={{ color: c.apricot }}>◎</span> Watching for a match — can AI help in the meantime?
-                    </p>
-                    <Link
-                      href={`/ai-chat/${topic.id}`}
-                      className="mt-3 inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-[#2f584b] text-white"
-                      style={{ backgroundColor: c.apricot }}
-                    >
-                      Chat with Aapun AI
-                    </Link>
+                  <div className="space-y-3">
+                    <div className="rounded-xl px-4 py-3 text-sm"
+                      style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}>
+                      <p style={{ color: c.ink }}>
+                        <span style={{ color: c.apricot }}>◎</span> Watching for a match — can AI help in the meantime?
+                      </p>
+                      <Link href={`/ai-chat/${topic.id}`}
+                        className="mt-3 inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white hover:opacity-90"
+                        style={{ backgroundColor: c.apricot }}>
+                        Chat with Aapun AI
+                      </Link>
+                    </div>
+
+                    {insights[topic.id] && (
+                      <div className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+                        style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+                        <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>💡 While you wait</p>
+                        <p style={{ color: c.inkSoft }}>{insights[topic.id]}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
