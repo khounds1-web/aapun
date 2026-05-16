@@ -1,6 +1,10 @@
 "use client";
 
-import { SignUpButton } from "@clerk/nextjs";
+"use client";
+
+import { SignUpButton, useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 /* Aapun palette — warm linen, sage trust, apricot warmth */
 const c = {
@@ -18,6 +22,14 @@ const c = {
 } as const;
 
 export default function Home() {
+  const { isSignedIn } = useUser();
+const router = useRouter();
+
+useEffect(() => {
+  if (isSignedIn) {
+    router.push("/get-started");
+  }
+}, [isSignedIn]);
   return (
     <div
       className="relative min-h-full overflow-hidden font-sans"
