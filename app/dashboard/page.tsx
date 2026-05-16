@@ -27,6 +27,7 @@ type Topic = {
   experience_categories: string[];
   created_at: string;
   match_status?: string;
+  matched_with?: string;
 };
 
 export default function DashboardPage() {
@@ -138,15 +139,25 @@ export default function DashboardPage() {
                   {topic.description}
                 </p>
 
-                <div
-                  className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
-                  style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
-                >
-                  <span style={{ color: c.apricot }}>◎</span>
-                  <span style={{ color: c.ink }}>
-                    {topic.match_status || "Watching for a match — we'll let you know."}
-                  </span>
-                </div>
+                {topic.matched_with ? (
+                  <div
+                    className="rounded-xl px-4 py-3 text-sm"
+                    style={{ backgroundColor: c.sageLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.sage}33` }}
+                  >
+                    <p className="font-medium" style={{ color: c.sage }}>✓ We found you a match!</p>
+                    <p className="mt-1" style={{ color: c.inkSoft }}>
+                      You've been matched with <strong>{topic.matched_with}</strong>. We'll be in touch shortly to introduce you.
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+                    style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}
+                  >
+                    <span style={{ color: c.apricot }}>◎</span>
+                    <span style={{ color: c.ink }}>Watching for a match — we'll let you know.</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
