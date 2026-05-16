@@ -1,3 +1,7 @@
+"use client";
+
+import { SignUpButton } from "@clerk/nextjs";
+
 /* Aapun palette — warm linen, sage trust, apricot warmth */
 const c = {
   bg: "#f6f4ef",
@@ -115,12 +119,11 @@ export default function Home() {
         </aside>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <a
-            href="/get-started"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-[#3a6b5c] px-8 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3a6b5c]"
-          >
-            Get Started
-          </a>
+          <SignUpButton mode="modal" afterSignUpUrl="/get-started">
+            <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#3a6b5c] px-8 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3a6b5c]">
+              Get Started
+            </button>
+          </SignUpButton>
           <p className="text-sm" style={{ color: c.inkMuted }}>
             Takes a few minutes to set up your profile.
           </p>
