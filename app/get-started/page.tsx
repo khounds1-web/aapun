@@ -45,6 +45,7 @@ export default function GetStartedPage() {
   const [categories, setCategories] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
   const [fullName, setFullName] = useState("");
+  const [confirmedAdult, setConfirmedAdult] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -114,7 +115,9 @@ export default function GetStartedPage() {
   const canContinue =
     (step === 1 && categories.size > 0) ||
     (step === 2 && description.trim().length >= 20) ||
-    (step === 3 && fullName.trim().length >= 2);
+    (step === 3 &&
+      fullName.trim().length >= 2 &&
+      confirmedAdult);
 
   return (
     <div
@@ -206,7 +209,12 @@ export default function GetStartedPage() {
                 />
               )}
               {step === 3 && (
-                <StepName value={fullName} onChange={setFullName} />
+                <StepName
+                  value={fullName}
+                  onChange={setFullName}
+                  confirmedAdult={confirmedAdult}
+                  onConfirmedAdultChange={setConfirmedAdult}
+                />
               )}
 
               {submitError && (
@@ -383,9 +391,13 @@ function StepDescription({
 function StepName({
   value,
   onChange,
+  confirmedAdult,
+  onConfirmedAdultChange,
 }: {
   value: string;
   onChange: (value: string) => void;
+  confirmedAdult: boolean;
+  onConfirmedAdultChange: (value: boolean) => void;
 }) {
   return (
     <div>
@@ -414,7 +426,7 @@ function StepName({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Your full name"
-        className="mb-6 w-full rounded-xl px-4 py-3 text-base outline-none transition-shadow focus:ring-2 focus:ring-[#3a6b5c]/30"
+        className="mb-4 w-full rounded-xl px-4 py-3 text-base outline-none transition-shadow focus:ring-2 focus:ring-[#3a6b5c]/30"
         style={{
           color: c.ink,
           backgroundColor: "#fff",
@@ -423,6 +435,31 @@ function StepName({
           borderColor: c.border,
         }}
       />
+
+      <div className="mb-6">
+        <label
+          htmlFor="confirm-adult"
+          className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1"
+        >
+          <input
+            id="confirm-adult"
+            type="checkbox"
+            checked={confirmedAdult}
+            onChange={(e) => onConfirmedAdultChange(e.target.checked)}
+            aria-required="true"
+            className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 rounded border border-[#d8e4de] outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[#3a6b5c]/35"
+            style={{
+              accentColor: c.sage,
+            }}
+          />
+          <span
+            className="text-sm font-medium leading-snug"
+            style={{ color: c.ink }}
+          >
+            I confirm I am 18 years of age or older
+          </span>
+        </label>
+      </div>
 
       <aside
         className="rounded-xl p-4 text-sm leading-relaxed"
