@@ -15,6 +15,11 @@ export async function saveProfile(data: {
     return { error: "Not signed in" };
   }
 
+  // Get user's email from Clerk
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const email = user.emailAddresses[0]?.emailAddress || "";
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -23,6 +28,7 @@ export async function saveProfile(data: {
   const { error } = await supabase.from("profiles").insert({
     user_id: userId,
     full_name: data.fullName,
+    email: email,
     description: data.description,
     experience_categories: data.experienceCategories,
   });
@@ -40,6 +46,7 @@ export async function saveProfile(data: {
       html: `
         <h2>New user signed up on Aapun</h2>
         <p><strong>Name:</strong> ${data.fullName}</p>
+        <p><strong>Email:</strong> ${email}</p>
         <p><strong>Topics:</strong> ${data.experienceCategories.join(", ")}</p>
         <p><strong>Story:</strong> ${data.description || "Not provided"}</p>
         <br/>
@@ -61,7 +68,6 @@ export async function notifyMatch(
 ) {
   try {
     const client = await clerkClient();
-
     const [userA, userB] = await Promise.all([
       client.users.getUser(userIdA),
       client.users.getUser(userIdB),
