@@ -19,12 +19,10 @@ export async function saveProfile(data: {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { error } = await supabase.from("profiles").upsert({
-    user_id: userId,
+  const { error } = await supabase.from("profiles").insert({    user_id: userId,
     full_name: data.fullName,
     description: data.description,
-    experience_categories: data.experienceCategories,
-    updated_at: new Date().toISOString(),
+    experience_categories: data.experienceCategories
   });
 
   if (error) {
