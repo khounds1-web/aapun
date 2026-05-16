@@ -24,7 +24,7 @@ const c = {
 const EXPERIENCE_CATEGORIES = [
   "Planning to conceive soon",
   "First-time parents",
-  "Breastfeeding/Pumping",
+  "Breastfeeding/Pumping/Formula feeding",
   "Postpartum depression/anxiety",
   "NICU parents",
   "IVF",
