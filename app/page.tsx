@@ -1,14 +1,12 @@
 "use client";
 
-"use client";
-
-import { SignUpButton, useUser } from "@clerk/nextjs";
+import { SignUpButton, SignInButton, useUser } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
-/* Aapun palette — warm linen, sage trust, apricot warmth */
 const c = {
-  bg: "#f6f4ef",
+  bg: "#f5f0ea",
   ink: "#1c2824",
   inkSoft: "#4a5c56",
   inkMuted: "#6d8078",
@@ -17,176 +15,212 @@ const c = {
   sageLight: "#e4ede9",
   apricot: "#c97a52",
   apricotLight: "#f3e4db",
-  card: "rgba(255, 255, 255, 0.75)",
+  card: "rgba(255, 255, 255, 0.85)",
   border: "#d8e4de",
 } as const;
 
 export default function Home() {
   const { isSignedIn } = useUser();
-const router = useRouter();
+  const router = useRouter();
 
-useEffect(() => {
-  if (isSignedIn) {
-    router.push("/dashboard");
-  }
-}, [isSignedIn]);
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push("/dashboard");
+    }
+  }, [isSignedIn]);
+
   return (
-    <div
-      className="relative min-h-full overflow-hidden font-sans"
-      style={{ backgroundColor: c.bg, color: c.inkSoft }}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.sage}22` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl"
-        style={{ backgroundColor: `${c.apricot}28` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-[38%] right-[18%] h-56 w-56 rounded-full blur-2xl"
-        style={{ backgroundColor: `${c.sageLight}99` }}
-      />
+    <div className="min-h-full font-sans" style={{ backgroundColor: c.bg, color: c.inkSoft }}>
 
-      <main className="relative mx-auto flex min-h-full max-w-2xl flex-col justify-center px-6 py-14 sm:px-10 sm:py-24">
-        <header className="mb-12 text-center">
-          <div className="mb-6 flex flex-col items-center gap-4">
-            <AapunMark size={56} />
-            <p
-              className="text-5xl font-semibold tracking-tight sm:text-6xl"
-              style={{ color: c.ink }}
-            >
-              Aapun
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-8 py-5 sm:px-12">
+        <div className="flex items-center gap-3">
+          <AapunMark size={36} />
+          <span className="text-xl font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="hidden sm:flex items-center gap-6 text-sm font-medium" style={{ color: c.inkMuted }}>
+            <a href="#how-it-works" className="transition-opacity hover:opacity-70">How it works</a>
+            <a href="#safety" className="transition-opacity hover:opacity-70">Safety</a>
+            <a href="#about" className="transition-opacity hover:opacity-70">About</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <SignInButton mode="modal">
+              <button className="text-sm font-medium transition-opacity hover:opacity-70" style={{ color: c.inkSoft }}>
+                Sign in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
+                style={{ backgroundColor: c.sage }}>
+                Get Started
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[85vh]">
+        {/* Left */}
+        <div className="flex flex-col justify-center px-8 py-16 sm:px-12 lg:px-16">
+          <div className="max-w-lg">
+            <p className="mb-4 text-sm font-medium tracking-widest uppercase" style={{ color: c.apricot }}>
+              For parents, by parents
+            </p>
+            <h1 className="mb-6 text-5xl font-semibold leading-tight tracking-tight sm:text-6xl" style={{ color: c.ink }}>
+              Talk to someone who{" "}
+              <span className="italic" style={{ color: c.sage }}>truly</span>{" "}
+              gets it
+            </h1>
+            <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+              Aapun is a safe space for parents to have one-on-one conversations with others who share similar lived experiences.
+            </p>
+
+            {/* Three features */}
+            <div className="mb-10 grid grid-cols-3 gap-4">
+              {[
+                { icon: "♡", title: "Real conversations", sub: "No advice unless asked." },
+                { icon: "⌂", title: "People who get it", sub: "Parents like you." },
+                { icon: "⊕", title: "Private & respectful", sub: "Your story stays yours." },
+              ].map((f) => (
+                <div key={f.title}>
+                  <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full text-base"
+                    style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                    {f.icon}
+                  </div>
+                  <p className="text-sm font-semibold" style={{ color: c.ink }}>{f.title}</p>
+                  <p className="text-xs leading-snug" style={{ color: c.inkMuted }}>{f.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-4">
+              <SignUpButton mode="modal">
+                <button className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
+                  style={{ backgroundColor: c.sage }}>
+                  Get Started
+                </button>
+              </SignUpButton>
+              <a href="#how-it-works"
+                className="inline-flex h-12 items-center gap-2 text-base font-medium transition-opacity hover:opacity-70"
+                style={{ color: c.inkSoft }}>
+                How it works →
+              </a>
+            </div>
+
+            <p className="mt-6 flex items-center gap-2 text-xs" style={{ color: c.inkMuted }}>
+              <span>🔒</span> Safe. Private. Human.
             </p>
           </div>
-          <h1
-            className="mx-auto max-w-xl text-3xl leading-snug font-semibold tracking-tight sm:text-4xl"
-            style={{ color: c.ink }}
-          >
-            Talk to someone who{" "}
-            <span style={{ color: c.sage }}>truly gets it</span>
-          </h1>
-        </header>
+        </div>
 
-        <section className="mb-10 space-y-5 text-lg leading-relaxed">
-          <p>
-            Aapun is a place for one-on-one conversations with others who share
-            similar lived experiences — scheduled chats today, with room for
-            real-time connection later.
-          </p>
-          <p>
-            You bring your story. They bring theirs. No scripts, no diagnoses —
-            just two humans listening to each other.
-          </p>
-        </section>
+        {/* Right — image */}
+        <div className="relative hidden lg:block">
+          <Image
+            src="/mugs.png"
+            alt="Two mugs — a conversation between two parents"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+      </section>
 
-        <aside
-          className="mb-12 rounded-2xl p-6 shadow-sm backdrop-blur-sm sm:p-8"
-          style={{
-            backgroundColor: c.card,
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: c.border,
-          }}
-          role="note"
-        >
-          <div className="mb-3 flex items-start gap-3">
-            <span
-              className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: c.apricotLight, color: c.apricot }}
-              aria-hidden
-            >
-              <HeartIcon />
-            </span>
-            <h2
-              className="text-base font-semibold sm:text-lg"
-              style={{ color: c.ink }}
-            >
-              A gentle but important note
-            </h2>
-          </div>
-          <div className="space-y-3 leading-relaxed">
-            <p>
-              <strong className="font-medium" style={{ color: c.ink }}>
-                Aapun is not therapy, counseling, or mental health treatment.
-              </strong>{" "}
-              Peers here are not clinicians and cannot give medical or
-              professional advice.
-            </p>
-            <p>
-              <strong className="font-medium" style={{ color: c.ink }}>
-                Aapun is not a crisis or emergency service.
-              </strong>{" "}
-              If you or someone else is in immediate danger, please contact local
-              emergency services or a crisis helpline in your area.
-            </p>
-            <p className="text-base" style={{ color: c.inkMuted }}>
-              We&apos;re here for mutual support and shared understanding — warm,
-              human, and real.
-            </p>
-          </div>
-        </aside>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <SignUpButton mode="modal" fallbackRedirectUrl="/get-started">
-            <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#3a6b5c] px-8 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3a6b5c]">
-              Get Started
-            </button>
-          </SignUpButton>
-          <p className="text-sm" style={{ color: c.inkMuted }}>
-            Takes a few minutes to set up your profile.
+      {/* You bring your story */}
+      <section className="px-8 py-20 text-center sm:px-12" id="how-it-works">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-4 text-2xl" style={{ color: c.apricot }}>♡</div>
+          <h2 className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl" style={{ color: c.ink }}>
+            You bring your story. They bring theirs.
+          </h2>
+          <p className="text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+            Just two humans listening to each other.
           </p>
         </div>
-      </main>
+      </section>
+
+      {/* How it works */}
+      <section className="px-8 py-16 sm:px-12" id="how-it-works">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="mb-12 text-center text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>
+            How Aapun works
+          </h2>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+            {[
+              { step: "1", title: "Share your experience", desc: "Tell us what you're navigating — no pressure, no judgment." },
+              { step: "2", title: "We find your match", desc: "We connect you with a parent who truly understands your situation." },
+              { step: "3", title: "Have a real conversation", desc: "Connect one-on-one, at your own pace, on your terms." },
+            ].map((s) => (
+              <div key={s.step} className="rounded-2xl p-6"
+                style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white"
+                  style={{ backgroundColor: c.sage }}>
+                  {s.step}
+                </div>
+                <h3 className="mb-2 font-semibold" style={{ color: c.ink }}>{s.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: c.inkSoft }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Safety */}
+      <section className="px-8 py-16 sm:px-12" id="safety">
+        <div className="mx-auto max-w-2xl rounded-2xl p-8 sm:p-10"
+          style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}>
+          <h2 className="mb-4 text-xl font-semibold" style={{ color: c.ink }}>A gentle but important note</h2>
+          <p className="mb-3 leading-relaxed" style={{ color: c.inkSoft }}>
+            <strong style={{ color: c.ink }}>Aapun is not therapy, counseling, or mental health treatment.</strong>{" "}
+            Peers here are not clinicians and cannot give medical or professional advice.
+          </p>
+          <p className="leading-relaxed" style={{ color: c.inkSoft }}>
+            <strong style={{ color: c.ink }}>Aapun is not a crisis or emergency service.</strong>{" "}
+            If you or someone else is in immediate danger, please contact local emergency services or a crisis helpline in your area.
+          </p>
+        </div>
+      </section>
+
+      {/* About */}
+      <section className="px-8 py-16 text-center sm:px-12" id="about">
+        <div className="mx-auto max-w-xl">
+          <AapunMark size={48} />
+          <h2 className="mt-4 mb-3 text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
+          <p className="leading-relaxed" style={{ color: c.inkSoft }}>
+            Aapun means <em>my own</em> in Assamese — close ones, kinsfolk, your people. We built this because parenting can be isolating, and sometimes you just need to talk to someone who's been there. Not a professional. Not a friend with opinions. Just a parent who gets it.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer CTA */}
+      <section className="px-8 py-20 text-center sm:px-12">
+        <h2 className="mb-6 text-3xl font-semibold tracking-tight" style={{ color: c.ink }}>
+          Ready to find your person?
+        </h2>
+        <SignUpButton mode="modal">
+          <button className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
+            style={{ backgroundColor: c.sage }}>
+            Get Started — it's free
+          </button>
+        </SignUpButton>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t px-8 py-8 text-center text-sm" style={{ borderColor: c.border, color: c.inkMuted }}>
+        © 2025 Aapun. Safe. Private. Human.
+      </footer>
+
     </div>
   );
 }
 
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="15"
-        cy="20"
-        r="11"
-        fill={`${c.sage}33`}
-        stroke={c.sage}
-        strokeWidth="1.5"
-      />
-      <circle
-        cx="25"
-        cy="20"
-        r="11"
-        fill={`${c.apricot}33`}
-        stroke={c.apricot}
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
+      <circle cx="15" cy="20" r="11" fill={`${c.sage}33`} stroke={c.sage} strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill={`${c.apricot}33`} stroke={c.apricot} strokeWidth="1.5" />
     </svg>
   );
 }
