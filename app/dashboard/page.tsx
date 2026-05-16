@@ -36,6 +36,14 @@ export default function DashboardPage() {
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -44,22 +52,37 @@ export default function DashboardPage() {
       return;
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    loadTopics();
+  }, [isLoaded, user]);
 
-    supabase
+  async function loadTopics() {
+    if (!user) return;
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) console.error("Supabase fetch error:", error);
-        setTopics(data || []);
-        setLoading(false);
-      });
-  }, [isLoaded, user]);
+      .order("created_at", { ascending: false });
+
+    if (error) console.error("Supabase fetch error:", error);
+    setTopics(data || []);
+    setLoading(false);
+  }
+
+  async function deleteTopic(id: string) {
+    setDeletingId(id);
+    await supabase.from("profiles").delete().eq("id", id);
+    setTopics((prev) => prev.filter((t) => t.id !== id));
+    setDeletingId(null);
+  }
+
+  async function clearAllTopics() {
+    if (!user) return;
+    setClearingAll(true);
+    await supabase.from("profiles").delete().eq("user_id", user.id);
+    setTopics([]);
+    setClearingAll(false);
+    setConfirmClearAll(false);
+  }
 
   const firstName = topics[0]?.full_name?.trim().split(/\s+/)[0] || "there";
 
@@ -94,12 +117,46 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-            Your topics, {firstName}
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
-            Each topic is looking for a peer who gets it.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+                Your topics, {firstName}
+              </h1>
+              <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
+                Each topic is looking for a peer who gets it.
+              </p>
+            </div>
+            {topics.length > 0 && (
+              confirmClearAll ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: c.inkMuted }}>Are you sure?</span>
+                  <button
+                    onClick={clearAllTopics}
+                    disabled={clearingAll}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                    style={{ backgroundColor: c.apricot }}
+                  >
+                    {clearingAll ? "Clearing…" : "Yes, clear all"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmClearAll(false)}
+                    className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
+                    style={{ color: c.inkMuted }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmClearAll(true)}
+                  className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
+                  style={{ color: c.inkMuted }}
+                >
+                  Clear all
+                </button>
+              )
+            )}
+          </div>
         </header>
 
         {loading ? (
@@ -127,16 +184,26 @@ export default function DashboardPage() {
                 className="rounded-2xl p-6 shadow-sm backdrop-blur-sm"
                 style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
               >
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {topic.experience_categories.map((cat) => (
-                    <span
-                      key={cat}
-                      className="rounded-full px-3 py-1 text-xs font-medium"
-                      style={{ backgroundColor: c.sageLight, color: c.sage }}
-                    >
-                      {cat}
-                    </span>
-                  ))}
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div className="flex flex-wrap gap-2">
+                    {topic.experience_categories.map((cat) => (
+                      <span
+                        key={cat}
+                        className="rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ backgroundColor: c.sageLight, color: c.sage }}
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => deleteTopic(topic.id)}
+                    disabled={deletingId === topic.id}
+                    className="shrink-0 text-xs transition-opacity hover:opacity-70 disabled:opacity-40"
+                    style={{ color: c.inkMuted }}
+                  >
+                    {deletingId === topic.id ? "Deleting…" : "✕"}
+                  </button>
                 </div>
 
                 <p className="mb-4 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
