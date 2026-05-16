@@ -132,7 +132,7 @@ export default function GetStartedPage() {
 
   const canContinue =
     (step === 1 && categories.size > 0) ||
-    (step === 2 && description.trim().length >= 20) ||
+    (step === 2) ||
     (step === 3 && fullName.trim().length >= 2 && confirmedAdult);
 
   const progress = (step / TOTAL_STEPS) * 100;
@@ -333,8 +333,11 @@ function StepDescription({
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         Tell us your story, in your words
       </h1>
-      <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
+      <p className="mb-2 leading-relaxed" style={{ color: c.inkSoft }}>
         A few sentences about your parenting experience and what you'd like to talk about with another parent.
+      </p>
+      <p className="mb-6 text-sm" style={{ color: c.inkMuted }}>
+        This is optional — share as much or as little as you'd like.
       </p>
       <label htmlFor="experience-description" className="sr-only">Your parenting story</label>
       <textarea
@@ -345,10 +348,7 @@ function StepDescription({
         placeholder="For example: I'm a first-time mom with a 6-month-old and I'm really struggling with the isolation. I'd love to talk to someone who's been through this…"
         className="w-full resize-y rounded-xl border border-[#d8e4de] bg-white px-4 py-3 text-base leading-relaxed text-[#1c2824] outline-none transition-shadow focus:ring-2 focus:ring-[#3a6b5c]/30"
       />
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <p style={{ color: value.trim().length < 20 ? c.apricot : c.inkMuted }}>
-          {value.trim().length < 20 ? "At least 20 characters to continue" : "Thank you for sharing"}
-        </p>
+      <div className="mt-2 flex justify-end text-sm">
         <p style={{ color: c.inkMuted }}>{remaining} left</p>
       </div>
     </div>
