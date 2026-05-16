@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
@@ -32,7 +32,6 @@ type Topic = {
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +81,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Link
                 href="/get-started"
                 className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#2f584b]"
@@ -90,13 +89,7 @@ export default function DashboardPage() {
               >
                 + Add topic
               </Link>
-              <button
-                onClick={() => signOut(() => router.push("/"))}
-                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-black/5"
-                style={{ color: c.inkMuted }}
-              >
-                Sign out
-              </button>
+              <UserButton afterSignOutUrl="/" />
             </div>
           </div>
 
