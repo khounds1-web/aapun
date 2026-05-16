@@ -40,6 +40,14 @@ const DESCRIPTION_MAX = 500;
 
 type Step = 1 | 2 | 3;
 
+function logClientError(context: string, err: unknown) {
+  const payload =
+    err instanceof Error
+      ? { message: err.message, stack: err.stack, name: err.name }
+      : { value: err };
+  console.error(`[${context}]`, payload);
+}
+
 export default function GetStartedPage() {
   const [step, setStep] = useState<Step>(1);
   const [categories, setCategories] = useState<Set<string>>(new Set());
@@ -76,7 +84,17 @@ export default function GetStartedPage() {
     setSubmitError(null);
 
     try {
-      const supabase = createClient();
+      let supabase: ReturnType<typeof createClient>;
+      try {
+        supabase = createClient();
+      } catch (err) {
+        logClientError("get-started/createClient", err);
+        setSubmitError(
+          "Could not connect to the app services. Check environment configuration.",
+        );
+        return;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -84,6 +102,7 @@ export default function GetStartedPage() {
       if (!user) {
         const { error: authError } = await supabase.auth.signInAnonymously();
         if (authError) {
+          logClientError("get-started/signInAnonymously", authError);
           setSubmitError(
             authError.message.includes("anonymous")
               ? "Anonymous sign-in is disabled. Enable it in Supabase → Authentication → Providers."
@@ -91,6 +110,23 @@ export default function GetStartedPage() {
           );
           return;
         }
+      }
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        logClientError("get-started/getSession", sessionError);
+      }
+
+      if (!session) {
+        console.error("[get-started] no session before saveProfile");
+        setSubmitError(
+          "Could not establish your session. Please refresh and try again.",
+        );
+        return;
       }
 
       const result = await saveProfile({
@@ -105,7 +141,8 @@ export default function GetStartedPage() {
       }
 
       setCompleted(true);
-    } catch {
+    } catch (err) {
+      logClientError("get-started/handleSubmit", err);
       setSubmitError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
