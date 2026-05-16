@@ -28,6 +28,7 @@ type Topic = {
   created_at: string;
   match_status?: string;
   matched_with?: string;
+  match_id?: string;
 };
 
 export default function DashboardPage() {
@@ -142,15 +143,22 @@ export default function DashboardPage() {
                   {topic.description}
                 </p>
 
-                {topic.matched_with ? (
+                {topic.matched_with && topic.match_id ? (
                   <div
                     className="rounded-xl px-4 py-3 text-sm"
                     style={{ backgroundColor: c.sageLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.sage}33` }}
                   >
                     <p className="font-medium" style={{ color: c.sage }}>✓ We found you a match!</p>
-                    <p className="mt-1" style={{ color: c.inkSoft }}>
-                      You've been matched with <strong>{topic.matched_with}</strong>. We'll be in touch shortly to introduce you.
+                    <p className="mt-1 mb-3" style={{ color: c.inkSoft }}>
+                      You've been matched with <strong>{topic.matched_with}</strong>.
                     </p>
+                    <Link
+                      href={`/chat/${topic.match_id}`}
+                      className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
+                      style={{ backgroundColor: c.sage }}
+                    >
+                      Say hi →
+                    </Link>
                   </div>
                 ) : (
                   <div
