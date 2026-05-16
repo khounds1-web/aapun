@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_PASSWORD = "Ontosomething";
@@ -27,6 +27,7 @@ type Profile = {
   experience_categories: string[];
   match_status: string | null;
   matched_with: string | null;
+  match_id: string | null;
   created_at: string;
 };
 
@@ -75,6 +76,8 @@ export default function AdminPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Generate a shared match_id
+    const matchId = `${selectedA.id}-${selectedB.id}`;
     const message = "We found you a match!";
 
     await supabase
@@ -82,6 +85,7 @@ export default function AdminPage() {
       .update({
         match_status: message,
         matched_with: selectedB.full_name,
+        match_id: matchId,
       })
       .eq("id", selectedA.id);
 
@@ -90,6 +94,7 @@ export default function AdminPage() {
       .update({
         match_status: message,
         matched_with: selectedA.full_name,
+        match_id: matchId,
       })
       .eq("id", selectedB.id);
 
@@ -144,15 +149,10 @@ export default function AdminPage() {
   }
 
   return (
-    <div
-      className="min-h-full font-sans"
-      style={{ backgroundColor: c.bg, color: c.inkSoft }}
-    >
+    <div className="min-h-full font-sans" style={{ backgroundColor: c.bg, color: c.inkSoft }}>
       <main className="mx-auto max-w-4xl px-6 py-10 sm:px-8 sm:py-14">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold" style={{ color: c.ink }}>
-            Aapun Admin
-          </h1>
+          <h1 className="text-2xl font-semibold" style={{ color: c.ink }}>Aapun Admin</h1>
           <button
             onClick={loadProfiles}
             className="rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
@@ -211,9 +211,7 @@ export default function AdminPage() {
                   backgroundColor: c.card,
                   borderWidth: 1,
                   borderStyle: "solid",
-                  borderColor: selectedA?.id === profile.id || selectedB?.id === profile.id
-                    ? c.sage
-                    : c.border,
+                  borderColor: selectedA?.id === profile.id || selectedB?.id === profile.id ? c.sage : c.border,
                 }}
               >
                 <div className="mb-2 flex items-start justify-between gap-4">
@@ -243,9 +241,7 @@ export default function AdminPage() {
                         : { backgroundColor: c.sageLight, color: c.sage }
                     }
                   >
-                    {selectedA?.id === profile.id || selectedB?.id === profile.id
-                      ? "Selected"
-                      : "Select"}
+                    {selectedA?.id === profile.id || selectedB?.id === profile.id ? "Selected" : "Select"}
                   </button>
                 </div>
 
@@ -267,12 +263,10 @@ export default function AdminPage() {
 
                 {profile.matched_with ? (
                   <p className="text-xs font-medium" style={{ color: c.sage }}>
-                    ✓ Matched with {profile.matched_with}
+                    ✓ Matched with {profile.matched_with} — Chat ID: {profile.match_id}
                   </p>
                 ) : (
-                  <p className="text-xs" style={{ color: c.inkMuted }}>
-                    Not yet matched
-                  </p>
+                  <p className="text-xs" style={{ color: c.inkMuted }}>Not yet matched</p>
                 )}
               </div>
             ))}
