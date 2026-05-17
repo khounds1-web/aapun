@@ -6,17 +6,17 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const c = {
-  bg: "#f5f0ea",
-  ink: "#1c2824",
-  inkSoft: "#4a5c56",
-  inkMuted: "#6d8078",
-  sage: "#3a6b5c",
-  sageDark: "#2f584b",
-  sageLight: "#e4ede9",
+  bg: "#f4f0f8",
+  ink: "#1e1a2e",
+  inkSoft: "#4a4060",
+  inkMuted: "#8a7fa0",
+  sage: "#6b5b9e",
+  sageDark: "#574a85",
+  sageLight: "#ede8f8",
   apricot: "#c97a52",
   apricotLight: "#f3e4db",
   card: "rgba(255, 255, 255, 0.85)",
-  border: "#d8e4de",
+  border: "#ddd6f0",
 } as const;
 
 export default function Home() {
@@ -51,7 +51,7 @@ export default function Home() {
               </button>
             </SignInButton>
             <SignUpButton mode="modal">
-              <button className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
+              <button className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors"
                 style={{ backgroundColor: c.sage }}>
                 Get Started
               </button>
@@ -76,7 +76,7 @@ export default function Home() {
               The trusted friend you never knew you had.
             </p>
             <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
-              Aapun is a safe space for parents to have one-on-one conversations with others who share similar lived experiences.
+              Aapun is a quiet space for meaningful conversations with parents who share similar lived experiences.
             </p>
 
             <div className="mb-10 grid grid-cols-3 gap-4">
@@ -98,7 +98,7 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-4">
               <SignUpButton mode="modal">
-                <button className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
+                <button className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-medium text-white shadow-md transition-colors"
                   style={{ backgroundColor: c.sage }}>
                   Get Started
                 </button>
@@ -117,13 +117,7 @@ export default function Home() {
         </div>
 
         <div className="relative hidden lg:block">
-          <Image
-            src="/mugs.png"
-            alt="Two mugs — a conversation between two parents"
-            fill
-            className="object-cover"
-            priority
-          />
+          <Image src="/mugs.png" alt="Two mugs — a conversation between two parents" fill className="object-cover" priority />
         </div>
       </section>
 
@@ -203,7 +197,7 @@ export default function Home() {
           Ready to find your person?
         </h2>
         <SignUpButton mode="modal">
-          <button className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
+          <button className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md"
             style={{ backgroundColor: c.sage }}>
             Get Started — it's free
           </button>
