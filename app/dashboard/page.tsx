@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { getResourcesForCategories, DEFAULT_RESOURCES, type Resource } from "@/app/lib/resources";
 
 const c = {
   bg: "#faf9fc",
@@ -29,6 +28,16 @@ type Topic = {
   created_at: string;
   matched_with?: string;
   match_id?: string;
+};
+
+type Resource = {
+  id: string;
+  type: "listen" | "read";
+  title: string;
+  subtitle: string;
+  link: string;
+  cover_bg: string;
+  cover_text: string;
 };
 
 type GroupedCategory = {
@@ -96,7 +105,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
-  const [resources, setResources] = useState<Resource[]>(DEFAULT_RESOURCES);
+  const [resources, setResources] = useState<Resource[]>([]);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,11 +130,61 @@ export default function DashboardPage() {
     setTopics(topicsData);
     setLoading(false);
 
-    // Get all unique categories across all user's topics
     const allCategories = Array.from(
       new Set(topicsData.flatMap((t: Topic) => t.experience_categories))
     );
-    setResources(getResourcesForCategories(allCategories));
+
+    if (allCategories.length > 0) {
+      await loadDailyResources(user.id, allCategories);
+    }
+  }
+
+  async function loadDailyResources(userId: string, categories: string[]) {
+    // Get resources the user has already seen
+    const { data: seenData } = await supabase
+      .from("user_seen_resources")
+      .select("resource_id")
+      .eq("user_id", userId);
+
+    const seenIds = (seenData || []).map((r: { resource_id: string }) => r.resource_id);
+
+    // Get 2 unseen resources from user's categories
+    let query = supabase
+      .from("resources")
+      .select("*")
+      .in("category", categories)
+      .limit(20);
+
+    if (seenIds.length > 0) {
+      query = query.not("id", "in", `(${seenIds.join(",")})`);
+    }
+
+    const { data: available } = await query;
+
+    if (!available || available.length === 0) {
+      // All seen — reset and start again
+      setResources([]);
+      return;
+    }
+
+    // Use date as seed to pick deterministically but differently each day
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const startIndex = seed % available.length;
+
+    const picked: Resource[] = [];
+    for (let i = 0; i < Math.min(2, available.length); i++) {
+      picked.push(available[(startIndex + i) % available.length]);
+    }
+
+    setResources(picked);
+
+    // Mark as seen
+    if (picked.length > 0) {
+      await supabase.from("user_seen_resources").insert(
+        picked.map((r) => ({ user_id: userId, resource_id: r.id }))
+      );
+    }
   }
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
@@ -185,8 +244,6 @@ export default function DashboardPage() {
 
             {/* Your spaces + AI card */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-              {/* Topic cards */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -272,37 +329,39 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Thoughtfully chosen — dynamic per user categories */}
-            <section>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                  Thoughtfully chosen for you
-                </h2>
-                <Link href="/resources" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
-                  See all
-                </Link>
-              </div>
-              <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                {resources.map((res, i) => (
-                  <a href={res.link} target="_blank" rel="noopener noreferrer" key={i}
-                    className={`flex items-center gap-4 px-5 py-4 transition-opacity hover:opacity-70 ${i < resources.length - 1 ? "border-b" : ""}`}
-                    style={{ borderColor: c.border }}>
-                    <BookCover bg={res.coverBg} text={res.coverText} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium mb-0.5" style={{ color: c.ink }}>{res.title}</p>
-                      <p className="text-xs" style={{ color: c.inkMuted }}>{res.subtitle}</p>
-                    </div>
-                    <span className="text-xs rounded-full px-3 py-1 shrink-0"
-                      style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                      {res.type === "read" ? "Read" : "Listen"}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </section>
+            {/* Today's resources */}
+            {resources.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
+                    Thoughtfully chosen for you today
+                  </h2>
+                  <Link href="/resources" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
+                    See all
+                  </Link>
+                </div>
+                <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                  {resources.map((res, i) => (
+                    <a href={res.link} target="_blank" rel="noopener noreferrer" key={res.id}
+                      className={`flex items-center gap-4 px-5 py-4 transition-opacity hover:opacity-70 ${i < resources.length - 1 ? "border-b" : ""}`}
+                      style={{ borderColor: c.border }}>
+                      <BookCover bg={res.cover_bg} text={res.cover_text || res.title.slice(0, 10)} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium mb-0.5" style={{ color: c.ink }}>{res.title}</p>
+                        <p className="text-xs" style={{ color: c.inkMuted }}>{res.subtitle}</p>
+                      </div>
+                      <span className="text-xs rounded-full px-3 py-1 shrink-0"
+                        style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                        {res.type === "read" ? "Read" : "Listen"}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <p className="text-xs italic text-center pt-4" style={{ color: c.inkMuted }}>
-              You don't have to go through it alone. ♡
+            This is your quiet place. Come back anytime ♡
             </p>
 
           </div>
