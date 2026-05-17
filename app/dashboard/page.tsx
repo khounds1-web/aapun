@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -23,38 +22,10 @@ const c = {
 } as const;
 
 const FEATURED_RESOURCES = [
-  {
-    type: "read",
-    title: "Nobody Told Me",
-    subtitle: "About Becoming a Mom",
-    description: "A gentle read about the real emotions behind early motherhood.",
-    coverBg: "#e8e2d4",
-    coverText: "Nobody\nTold Me",
-  },
-  {
-    type: "listen",
-    title: "The Lavender Hour",
-    subtitle: "Ep. 42",
-    description: "The invisible load no one talks about.",
-    coverBg: "#ddd4e8",
-    coverText: "THE\nLAVENDER\nHOUR",
-  },
-  {
-    type: "read",
-    title: "Good Inside",
-    subtitle: "Dr. Becky Kennedy",
-    description: "The parenting manual you always wanted.",
-    coverBg: "#d4e4d8",
-    coverText: "Good\nInside",
-  },
-  {
-    type: "listen",
-    title: "Mom and Mind",
-    subtitle: "Latest episode",
-    description: "Honest conversations about postpartum that no one talks about.",
-    coverBg: "#e4d8d4",
-    coverText: "Mom\n&\nMind",
-  },
+  { type: "read", title: "Nobody Told Me", subtitle: "About Becoming a Mom", description: "A gentle read about the real emotions behind early motherhood.", coverBg: "#e8e2d4", coverText: "Nobody\nTold Me" },
+  { type: "listen", title: "The Lavender Hour", subtitle: "Ep. 42", description: "The invisible load no one talks about.", coverBg: "#ddd4e8", coverText: "THE\nLAVENDER\nHOUR" },
+  { type: "read", title: "Good Inside", subtitle: "Dr. Becky Kennedy", description: "The parenting manual you always wanted.", coverBg: "#d4e4d8", coverText: "Good\nInside" },
+  { type: "listen", title: "Mom and Mind", subtitle: "Latest episode", description: "Honest conversations about postpartum.", coverBg: "#e4d8d4", coverText: "Mom\n&\nMind" },
 ];
 
 type Topic = {
@@ -93,7 +64,7 @@ function BookCover({ bg, text }: { bg: string; text: string }) {
   return (
     <div className="shrink-0 rounded-md flex items-center justify-center p-2 text-center"
       style={{ width: 56, height: 72, backgroundColor: bg }}>
-      <span className="text-xs font-medium leading-tight whitespace-pre-line" style={{ color: c.ink, fontSize: 9 }}>
+      <span className="font-medium leading-tight whitespace-pre-line" style={{ color: c.ink, fontSize: 9 }}>
         {text}
       </span>
     </div>
@@ -155,6 +126,8 @@ export default function DashboardPage() {
     { id: "profile", label: "Profile" },
   ];
 
+  const aiHref = topics.length > 0 ? `/ai-chat/${topics[0].id}` : "/get-started";
+
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
 
@@ -197,21 +170,15 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Hero greeting with mugs */}
-      <div className="relative overflow-hidden border-b" style={{ borderColor: c.border }}>
-        <div className="mx-auto max-w-5xl px-6 sm:px-10 py-10">
+      {/* Hero greeting */}
+      <div className="border-b px-6 sm:px-10 py-12" style={{ borderColor: c.border }}>
+        <div className="mx-auto max-w-5xl">
           <h1 className="text-3xl font-semibold mb-2" style={{ color: c.ink }}>
             {getGreeting()}, {firstName} {getGreetingEmoji()}
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: c.inkMuted }}>
             You're showing up for yourself.<br />We're glad you're here.
           </p>
-        </div>
-        <div className="absolute right-0 top-0 bottom-0 w-80 hidden sm:block">
-          <Image src="/mugs.png" alt="" fill className="object-cover object-left" priority />
-          <div className="absolute inset-0" style={{
-            background: `linear-gradient(to right, ${c.bg} 0%, transparent 35%)`
-          }} />
         </div>
       </div>
 
@@ -224,6 +191,8 @@ export default function DashboardPage() {
 
             {/* Two column — topics + AI card */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+              {/* Topics */}
               <div className="flex-1 min-w-0">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
@@ -309,35 +278,32 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* AI card */}
-              {topics.length > 0 && (
-                <div className="w-full lg:w-64 shrink-0">
-                  <Link href={`/ai-chat/${topics[0].id}`}
-                    className="block rounded-2xl border p-6 transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-5"
-                      style={{ backgroundColor: `${c.sage}22` }}>
-                      <span style={{ color: c.sage }}>✦</span>
-                    </div>
-                    <h3 className="text-sm font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
-                      Need a quiet space to talk things through?
-                    </h3>
-                    <p className="text-xs leading-relaxed mb-5" style={{ color: c.inkSoft }}>
-                      Aapun AI is here to listen — whenever you need.
-                    </p>
-                    <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-white"
-                      style={{ backgroundColor: c.sage }}>
-                      Talk with Aapun AI →
-                    </span>
-                  </Link>
-                </div>
-              )}
+              {/* AI card — always visible */}
+              <div className="w-full lg:w-64 shrink-0">
+                <Link href={aiHref}
+                  className="block rounded-2xl border p-6 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-5"
+                    style={{ backgroundColor: `${c.sage}22` }}>
+                    <span style={{ color: c.sage }}>✦</span>
+                  </div>
+                  <h3 className="text-sm font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+                    Need a quiet space to talk things through?
+                  </h3>
+                  <p className="text-xs leading-relaxed mb-5" style={{ color: c.inkSoft }}>
+                    Aapun AI is here to listen — whenever you need.
+                  </p>
+                  <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-white"
+                    style={{ backgroundColor: c.sage }}>
+                    Talk with Aapun AI →
+                  </span>
+                </Link>
+              </div>
             </div>
 
             {/* Thoughtfully chosen for you */}
             <section>
               <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                {/* Header */}
                 <div className="flex items-center gap-4 px-6 py-5 border-b" style={{ borderColor: c.border }}>
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                     style={{ backgroundColor: c.sageLight }}>
@@ -350,8 +316,6 @@ export default function DashboardPage() {
                     <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Resources to read, listen and reflect.</p>
                   </div>
                 </div>
-
-                {/* Scrollable resource items */}
                 <div className="flex overflow-x-auto divide-x" style={{ borderColor: c.border }}>
                   {FEATURED_RESOURCES.map((res, i) => (
                     <Link href="/resources" key={i}
