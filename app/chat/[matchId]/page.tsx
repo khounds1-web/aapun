@@ -86,8 +86,10 @@ export default function ChatPage() {
   const [loadingPrompts, setLoadingPrompts] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [authorized, setAuthorized] = useState(false);
-  const [anonymityChosen, setAnonymityChosen] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const storageKey = `aapun_anon_${matchId}`;
+const savedChoice = typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
+const [anonymityChosen, setAnonymityChosen] = useState(savedChoice !== null);
+const [isAnonymous, setIsAnonymous] = useState(savedChoice === "true");
   const [otherIsAnonymous, setOtherIsAnonymous] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -270,16 +272,14 @@ export default function ChatPage() {
 
             <div className="space-y-3">
               <button
-                onClick={() => { setIsAnonymous(false); setAnonymityChosen(true); }}
-                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
+onClick={() => { setIsAnonymous(false); setAnonymityChosen(true); localStorage.setItem(storageKey, "false"); }}                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
                 style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}>
                 <p className="font-medium text-sm" style={{ color: c.sage }}>Use my name — {senderName}</p>
                 <p className="text-xs mt-1" style={{ color: c.inkMuted }}>Your name and photo will be visible</p>
               </button>
 
               <button
-                onClick={() => { setIsAnonymous(true); setAnonymityChosen(true); }}
-                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
+onClick={() => { setIsAnonymous(true); setAnonymityChosen(true); localStorage.setItem(storageKey, "true"); }}                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
                 style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
                 <p className="font-medium text-sm" style={{ color: c.apricot }}>Stay anonymous</p>
                 <p className="text-xs mt-1" style={{ color: c.inkMuted }}>You'll appear as "A parent" with no photo</p>
