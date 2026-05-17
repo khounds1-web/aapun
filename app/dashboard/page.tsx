@@ -20,6 +20,12 @@ const c = {
   green: "#5a7c65",
 } as const;
 
+const RESOURCES = [
+  { type: "read", title: "Nobody Told Me", subtitle: "About Becoming a Mom — Heather McNamara", coverBg: "#e8e2d4", coverText: "Nobody\nTold Me" },
+  { type: "listen", title: "The Lavender Hour", subtitle: "Ep. 42 · The invisible load no one talks about", coverBg: "#ddd4e8", coverText: "THE\nLAVENDER\nHOUR" },
+  { type: "read", title: "Good Inside", subtitle: "Dr. Becky Kennedy", coverBg: "#d4e4d8", coverText: "Good\nInside" },
+];
+
 type Topic = {
   id: string;
   full_name: string;
@@ -71,11 +77,21 @@ function CategoryIcon({ category }: { category: string }) {
     "Hiring a nanny/caregiver": "🏠",
     "Other": "💬",
   };
-  const icon = icons[category] || "💬";
   return (
     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base"
       style={{ backgroundColor: c.sageLight }}>
-      {icon}
+      {icons[category] || "💬"}
+    </div>
+  );
+}
+
+function BookCover({ bg, text }: { bg: string; text: string }) {
+  return (
+    <div className="shrink-0 rounded-md flex items-center justify-center p-2 text-center shadow-sm"
+      style={{ width: 48, height: 64, backgroundColor: bg }}>
+      <span className="font-medium leading-tight whitespace-pre-line" style={{ color: c.ink, fontSize: 8 }}>
+        {text}
+      </span>
     </div>
   );
 }
@@ -152,8 +168,8 @@ export default function DashboardPage() {
         <div className="pt-16 pb-12">
           <p className="text-2xl mb-2" style={{ color: c.inkMuted }}>{getGreetingEmoji()}</p>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4" style={{ color: c.inkSoft }}>
-  {getGreeting()}, {firstName}
-</h1>
+            {getGreeting()}, {firstName}
+          </h1>
           <p className="text-base" style={{ color: c.inkMuted }}>
             You're showing up for yourself. We're glad you're here.
           </p>
@@ -164,7 +180,7 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-10 pb-20">
 
-            {/* Your spaces + AI card — two column */}
+            {/* Your spaces + AI card */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
 
               {/* Topic cards */}
@@ -194,9 +210,7 @@ export default function DashboardPage() {
                     {groupedCategories.map((group, i) => (
                       <div key={i} className="rounded-2xl border px-5 py-4 flex items-center gap-4"
                         style={{ backgroundColor: c.card, borderColor: c.border }}>
-
                         <CategoryIcon category={group.topics[0].experience_categories[0]} />
-
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm mb-0.5" style={{ color: c.ink }}>
                             {group.topics[0].experience_categories[0]}
@@ -213,19 +227,17 @@ export default function DashboardPage() {
                             </p>
                           )}
                         </div>
-
-                        {/* Action */}
                         {group.matches.length > 0 && group.matches[0].match_id ? (
                           <Link href={`/chat/${group.matches[0].match_id}`}
                             className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
                             style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                            Spend time together <span>›</span>
+                            Spend time together ›
                           </Link>
                         ) : (
                           <Link href={`/ai-chat/${group.topics[0].id}`}
                             className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
                             style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
-                            Reflect with AI <span>›</span>
+                            Reflect with AI ›
                           </Link>
                         )}
                       </div>
@@ -257,30 +269,27 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Resources */}
+            {/* Thoughtfully chosen */}
             <section>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                  Thoughtfully chosen for you
+                  Thoughtfully chosen
                 </h2>
                 <Link href="/resources" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
                   See all
                 </Link>
               </div>
               <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                {[
-                  { type: "read", title: "Nobody Told Me", subtitle: "About Becoming a Mom — Heather McNamara" },
-                  { type: "listen", title: "The Lavender Hour", subtitle: "Ep. 42 · The invisible load no one talks about" },
-                  { type: "read", title: "Good Inside", subtitle: "Dr. Becky Kennedy" },
-                ].map((res, i, arr) => (
+                {RESOURCES.map((res, i) => (
                   <Link href="/resources" key={i}
-                    className={`flex items-center justify-between px-6 py-4 transition-opacity hover:opacity-70 ${i < arr.length - 1 ? "border-b" : ""}`}
+                    className={`flex items-center gap-4 px-5 py-4 transition-opacity hover:opacity-70 ${i < RESOURCES.length - 1 ? "border-b" : ""}`}
                     style={{ borderColor: c.border }}>
-                    <div>
+                    <BookCover bg={res.coverBg} text={res.coverText} />
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium mb-0.5" style={{ color: c.ink }}>{res.title}</p>
                       <p className="text-xs" style={{ color: c.inkMuted }}>{res.subtitle}</p>
                     </div>
-                    <span className="text-xs rounded-full px-3 py-1 ml-4 shrink-0"
+                    <span className="text-xs rounded-full px-3 py-1 shrink-0"
                       style={{ backgroundColor: c.sageLight, color: c.sage }}>
                       {res.type === "read" ? "Read" : "Listen"}
                     </span>
