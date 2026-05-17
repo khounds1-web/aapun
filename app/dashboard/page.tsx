@@ -19,8 +19,42 @@ const c = {
   card: "#ffffff",
   border: "#ece7f5",
   green: "#5a7c65",
-  greenLight: "#eef3f0",
 } as const;
+
+const FEATURED_RESOURCES = [
+  {
+    type: "read",
+    title: "Nobody Told Me",
+    subtitle: "About Becoming a Mom",
+    description: "A gentle read about the real emotions behind early motherhood.",
+    color: "#e8e0f0",
+    emoji: "📗",
+  },
+  {
+    type: "listen",
+    title: "The Lavender Hour",
+    subtitle: "Ep. 42",
+    description: "The invisible load no one talks about.",
+    color: "#e8dff0",
+    emoji: "🎧",
+  },
+  {
+    type: "read",
+    title: "Good Inside",
+    subtitle: "Dr. Becky Kennedy",
+    description: "The parenting manual you always wanted.",
+    color: "#dff0e8",
+    emoji: "📘",
+  },
+  {
+    type: "listen",
+    title: "Mom and Mind",
+    subtitle: "Latest episode",
+    description: "Honest conversations about postpartum that no one talks about.",
+    color: "#f0e8df",
+    emoji: "🎙️",
+  },
+];
 
 type Topic = {
   id: string;
@@ -104,6 +138,14 @@ export default function DashboardPage() {
     else group.unmatched.push(topic);
   });
 
+  const navLinks = [
+    { id: "home", label: "Home", href: "/dashboard" },
+    { id: "conversations", label: "Conversations" },
+    { id: "topics", label: "Topics", href: "/get-started" },
+    { id: "read", label: "Read", href: "/resources" },
+    { id: "profile", label: "Profile" },
+  ];
+
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
 
@@ -111,34 +153,20 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-10 border-b px-6 sm:px-10"
         style={{ backgroundColor: c.bg, borderColor: c.border }}>
         <div className="mx-auto max-w-4xl flex items-center justify-between h-14">
-          {/* Logo */}
           <div className="flex items-center gap-2.5">
             <AapunMark size={28} />
             <span className="text-base font-semibold" style={{ color: c.ink }}>Aapun</span>
           </div>
-
-          {/* Nav links — desktop */}
           <nav className="hidden sm:flex items-center gap-8">
-            {[
-              { id: "home", label: "Home", href: "/dashboard" },
-              { id: "conversations", label: "Conversations" },
-              { id: "topics", label: "Topics", href: "/get-started" },
-              { id: "read", label: "Read", href: "/resources" },
-              { id: "profile", label: "Profile" },
-            ].map((item) => (
+            {navLinks.map((item) => (
               <button key={item.id}
                 onClick={() => { setActiveNav(item.id); if (item.href) router.push(item.href); }}
                 className="text-sm transition-opacity hover:opacity-70"
-                style={{
-                  color: activeNav === item.id ? c.sage : c.inkMuted,
-                  fontWeight: activeNav === item.id ? 500 : 400,
-                }}>
+                style={{ color: activeNav === item.id ? c.sage : c.inkMuted, fontWeight: activeNav === item.id ? 500 : 400 }}>
                 {item.label}
               </button>
             ))}
           </nav>
-
-          {/* Right — add + avatar */}
           <div className="flex items-center gap-3">
             <Link href="/get-started"
               className="hidden sm:inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-white"
@@ -148,23 +176,13 @@ export default function DashboardPage() {
             <UserButton />
           </div>
         </div>
-
         {/* Mobile nav */}
         <div className="sm:hidden flex items-center gap-6 pb-3 overflow-x-auto">
-          {[
-            { id: "home", label: "Home", href: "/dashboard" },
-            { id: "conversations", label: "Conversations" },
-            { id: "topics", label: "Topics", href: "/get-started" },
-            { id: "read", label: "Read", href: "/resources" },
-            { id: "profile", label: "Profile" },
-          ].map((item) => (
+          {navLinks.map((item) => (
             <button key={item.id}
               onClick={() => { setActiveNav(item.id); if (item.href) router.push(item.href); }}
-              className="text-sm whitespace-nowrap transition-opacity"
-              style={{
-                color: activeNav === item.id ? c.sage : c.inkMuted,
-                fontWeight: activeNav === item.id ? 500 : 400,
-              }}>
+              className="text-sm whitespace-nowrap"
+              style={{ color: activeNav === item.id ? c.sage : c.inkMuted, fontWeight: activeNav === item.id ? 500 : 400 }}>
               {item.label}
             </button>
           ))}
@@ -187,7 +205,7 @@ export default function DashboardPage() {
         {loading ? (
           <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-8">
 
             {/* Your spaces */}
             <section>
@@ -196,16 +214,16 @@ export default function DashboardPage() {
                   <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your spaces</h2>
                   <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Each space is holding a connection for you.</p>
                 </div>
-                <Link href="/get-started" className="text-xs" style={{ color: c.sage }}>+ Add space</Link>
+                <Link href="/get-started" className="text-xs transition-opacity hover:opacity-70" style={{ color: c.sage }}>
+                  + Add space
+                </Link>
               </div>
 
               {groupedCategories.length === 0 ? (
                 <div className="rounded-2xl p-10 text-center border"
                   style={{ backgroundColor: c.card, borderColor: c.border }}>
                   <p className="mb-1 font-medium text-sm" style={{ color: c.ink }}>Nothing here yet</p>
-                  <p className="mb-5 text-xs" style={{ color: c.inkMuted }}>
-                    Add your first space to begin finding someone who gets it.
-                  </p>
+                  <p className="mb-5 text-xs" style={{ color: c.inkMuted }}>Add your first space to begin finding someone who gets it.</p>
                   <Link href="/get-started"
                     className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
                     style={{ backgroundColor: c.sage }}>
@@ -217,7 +235,6 @@ export default function DashboardPage() {
                   {groupedCategories.map((group, i) => (
                     <div key={i} className="rounded-2xl border p-5"
                       style={{ backgroundColor: c.card, borderColor: c.border }}>
-
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {group.topics[0].experience_categories.map((cat) => (
                           <span key={cat} className="rounded-full px-3 py-1 text-xs"
@@ -226,7 +243,6 @@ export default function DashboardPage() {
                           </span>
                         ))}
                       </div>
-
                       {group.matches.length > 0 ? (
                         <div>
                           <p className="text-sm mb-3" style={{ color: c.inkSoft }}>
@@ -277,35 +293,66 @@ export default function DashboardPage() {
               )}
             </section>
 
-            {/* Bottom cards */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-                <p className="text-lg mb-1" style={{ color: c.sage }}>✦</p>
-                <h3 className="mb-1.5 font-medium text-sm" style={{ color: c.ink }}>Reflect with AI</h3>
-                <p className="mb-4 text-xs leading-relaxed" style={{ color: c.inkSoft }}>
-                  A quiet space to talk things through, anytime.
-                </p>
-                {topics.length > 0 ? (
-                  <Link href={`/ai-chat/${topics[0].id}`}
-                    className="inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-white"
+            {/* Reflect with AI card */}
+            <section>
+              {topics.length > 0 && (
+                <Link href={`/ai-chat/${topics[0].id}`}
+                  className="block rounded-2xl border p-6 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-4"
+                    style={{ backgroundColor: `${c.sage}22` }}>
+                    <span style={{ color: c.sage }}>✦</span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-1" style={{ color: c.ink }}>
+                    Need a quiet space to talk things through?
+                  </h3>
+                  <p className="text-sm mb-4" style={{ color: c.inkSoft }}>
+                    Aapun AI is here to listen — whenever you need.
+                  </p>
+                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium text-white"
                     style={{ backgroundColor: c.sage }}>
-                    Begin
-                  </Link>
-                ) : (
-                  <Link href="/get-started"
-                    className="inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Add a space first
-                  </Link>
-                )}
-              </div>
+                    Talk with Aapun AI →
+                  </span>
+                </Link>
+              )}
+            </section>
 
-              <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                <p className="text-lg mb-1">🔒</p>
-                <h3 className="mb-1.5 font-medium text-sm" style={{ color: c.ink }}>Your privacy matters</h3>
-                <p className="text-xs leading-relaxed" style={{ color: c.inkMuted }}>
-                  Conversations are private and gently fade after 3 days.
-                </p>
+            {/* Thoughtfully chosen for you */}
+            <section>
+              <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                <div className="flex items-start gap-4 p-5 border-b" style={{ borderColor: c.border }}>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: c.sageLight }}>
+                    <span style={{ color: c.sage, fontSize: 16 }}>📚</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm" style={{ color: c.ink }}>Thoughtfully chosen for you</h3>
+                    <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Resources to read, listen and reflect.</p>
+                  </div>
+                </div>
+
+                {/* Scrollable resource cards */}
+                <div className="flex gap-4 p-5 overflow-x-auto">
+                  {FEATURED_RESOURCES.map((res, i) => (
+                    <Link href="/resources" key={i}
+                      className="flex shrink-0 items-start gap-3 rounded-xl p-3 transition-opacity hover:opacity-80 w-52"
+                      style={{ backgroundColor: res.color }}>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-2xl"
+                        style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
+                        {res.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs leading-snug" style={{ color: c.ink }}>{res.title}</p>
+                        <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>{res.subtitle}</p>
+                        <p className="text-xs mt-1 leading-snug line-clamp-2" style={{ color: c.inkSoft }}>{res.description}</p>
+                        <span className="inline-block mt-2 rounded-full px-3 py-0.5 text-xs font-medium"
+                          style={{ backgroundColor: "rgba(255,255,255,0.7)", color: c.ink }}>
+                          {res.type === "read" ? "Read" : "Listen"}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </section>
 
