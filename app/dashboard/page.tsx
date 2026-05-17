@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
 const c = {
-  bg: "#f6f4ef",
+  bg: "#f5f0ea",
+  sidebar: "#1c2824",
+  sidebarText: "#a8bfb8",
+  sidebarActive: "#ffffff",
   ink: "#1c2824",
   inkSoft: "#4a5c56",
   inkMuted: "#6d8078",
@@ -16,8 +20,8 @@ const c = {
   sageLight: "#e4ede9",
   apricot: "#c97a52",
   apricotLight: "#f3e4db",
-  card: "rgba(255, 255, 255, 0.85)",
-  border: "#d8e4de",
+  card: "#ffffff",
+  border: "#e8e0d8",
 } as const;
 
 type Topic = {
@@ -31,15 +35,26 @@ type Topic = {
   match_id?: string;
 };
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getGreetingEmoji() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "☀️";
+  if (hour < 17) return "🌤️";
+  return "🌙";
+}
+
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [clearingAll, setClearingAll] = useState(false);
-  const [confirmClearAll, setConfirmClearAll] = useState(false);
-  const [insights, setInsights] = useState<Record<string, string>>({});
+  const [activeNav, setActiveNav] = useState("home");
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,217 +75,309 @@ export default function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) console.error("Supabase fetch error:", error);
-    const topicsData = data || [];
-    setTopics(topicsData);
+    if (error) console.error(error);
+    setTopics(data || []);
     setLoading(false);
-
-    // Generate insights for unmatched topics only
-    topicsData.forEach(async (topic) => {
-      if (!topic.matched_with && topic.experience_categories.length > 0) {
-        try {
-          const res = await fetch("/api/topic-insight", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ categories: topic.experience_categories }),
-          });
-          const data = await res.json();
-          if (data.content) {
-            setInsights((prev) => ({ ...prev, [topic.id]: data.content }));
-          }
-        } catch (err) {
-          console.error("Insight fetch error:", err);
-        }
-      }
-    });
   }
 
-  async function deleteTopic(id: string) {
-    setDeletingId(id);
-    await supabase.from("profiles").delete().eq("id", id);
-    setTopics((prev) => prev.filter((t) => t.id !== id));
-    setDeletingId(null);
-  }
+  const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
 
-  async function clearAllTopics() {
-    if (!user) return;
-    setClearingAll(true);
-    await supabase.from("profiles").delete().eq("user_id", user.id);
-    setTopics([]);
-    setClearingAll(false);
-    setConfirmClearAll(false);
-  }
+  // Group all categories with their match status
+  const allCategories = topics.map(t => ({
+    id: t.id,
+    category: t.experience_categories[0] || "General",
+    categories: t.experience_categories,
+    matched_with: t.matched_with,
+    match_id: t.match_id,
+    description: t.description,
+  }));
 
-  const firstName = topics[0]?.full_name?.trim().split(/\s+/)[0] || "there";
+  const navItems = [
+    { id: "home", label: "Home", icon: HomeIcon },
+    { id: "topics", label: "Topics", icon: TopicsIcon, href: "/get-started" },
+    { id: "conversations", label: "Conversations", icon: ChatIcon },
+    { id: "matches", label: "Matches", icon: MatchIcon },
+    { id: "profile", label: "Profile", icon: ProfileIcon },
+  ];
 
   return (
-    <div className="relative min-h-full overflow-hidden font-sans" style={{ backgroundColor: c.bg, color: c.inkSoft }}>
-      <AmbientBackground />
+    <div className="flex min-h-full font-sans" style={{ backgroundColor: c.bg }}>
 
-      <main className="relative mx-auto flex min-h-full max-w-2xl flex-col px-6 py-10 sm:px-8 sm:py-14">
-        <header className="mb-10">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AapunMark size={36} />
-              <div>
-                <p className="text-lg font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</p>
-                <p className="text-sm" style={{ color: c.inkMuted }}>
-                  <span className="italic">my own</span> — in Assamese
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/get-started"
-                className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#2f584b]"
-                style={{ backgroundColor: c.sage }}
+      {/* Sidebar */}
+      <aside className="hidden lg:flex w-60 flex-col fixed inset-y-0 left-0 z-10"
+        style={{ backgroundColor: c.sidebar }}>
+
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-6 py-6">
+          <AapunMarkLight size={32} />
+          <span className="text-lg font-semibold text-white">Aapun</span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveNav(item.id);
+                  if (item.href) router.push(item.href);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: isActive ? c.sidebarActive : c.sidebarText,
+                }}
               >
-                + Add topic
-              </Link>
-              <UserButton />
-            </div>
-          </div>
+                <Icon size={18} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-                Your topics, {firstName}
-              </h1>
-              <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
-                Each topic is looking for a peer who gets it.
-              </p>
-            </div>
-            {topics.length > 0 && (
-              confirmClearAll ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: c.inkMuted }}>Are you sure?</span>
-                  <button onClick={clearAllTopics} disabled={clearingAll}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-white" style={{ backgroundColor: c.apricot }}>
-                    {clearingAll ? "Clearing…" : "Yes, clear all"}
-                  </button>
-                  <button onClick={() => setConfirmClearAll(false)}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium hover:bg-black/5" style={{ color: c.inkMuted }}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => setConfirmClearAll(true)}
-                  className="rounded-full px-3 py-1.5 text-xs font-medium hover:bg-black/5" style={{ color: c.inkMuted }}>
-                  Clear all
-                </button>
-              )
-            )}
+        {/* Sidebar footer card */}
+        <div className="mx-3 mb-4 rounded-2xl overflow-hidden relative" style={{ height: 160 }}>
+          <Image src="/mugs.png" alt="Aapun" fill className="object-cover opacity-60" />
+          <div className="absolute inset-0 p-4 flex flex-col justify-end"
+            style={{ background: "linear-gradient(to top, rgba(28,40,36,0.9), transparent)" }}>
+            <p className="text-xs text-white leading-snug">A safe space to share, listen, and truly get it.</p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 lg:ml-60 flex flex-col min-h-full">
+
+        {/* Top bar */}
+        <header className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b"
+          style={{ backgroundColor: c.bg, borderColor: c.border }}>
+          <div>
+            <h1 className="text-xl font-semibold" style={{ color: c.ink }}>
+              {getGreeting()}, {firstName} {getGreetingEmoji()}
+            </h1>
+            <p className="text-sm" style={{ color: c.inkMuted }}>
+              You're showing up for yourself and your story. We're glad you're here.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/get-started"
+              className="inline-flex h-10 items-center gap-2 justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
+              style={{ backgroundColor: c.sage }}>
+              + Add topic
+            </Link>
+            <UserButton />
           </div>
         </header>
 
-        {loading ? (
-          <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>Loading…</p>
-        ) : topics.length === 0 ? (
-          <div className="rounded-2xl p-8 text-center shadow-sm backdrop-blur-sm"
-            style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-            <p className="mb-4 text-lg font-medium" style={{ color: c.ink }}>No topics yet</p>
-            <p className="mb-6 text-sm" style={{ color: c.inkMuted }}>Add your first topic to start finding a peer.</p>
-            <Link href="/get-started"
-              className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md hover:bg-[#2f584b]"
-              style={{ backgroundColor: c.sage }}>
-              Get started
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {topics.map((topic) => (
-              <div key={topic.id} className="rounded-2xl p-6 shadow-sm backdrop-blur-sm"
-                style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+        {/* Content */}
+        <main className="flex-1 px-8 py-8">
 
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <div className="flex flex-wrap gap-2">
-                    {topic.experience_categories.map((cat) => (
-                      <span key={cat} className="rounded-full px-3 py-1 text-xs font-medium"
-                        style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                        {cat}
-                      </span>
-                    ))}
+          {loading ? (
+            <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
+          ) : (
+            <div className="max-w-4xl space-y-8">
+
+              {/* Topics section */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold" style={{ color: c.ink }}>Your topics</h2>
+                    <p className="text-sm" style={{ color: c.inkMuted }}>Each topic is looking for a peer who gets it.</p>
                   </div>
-                  <button onClick={() => deleteTopic(topic.id)} disabled={deletingId === topic.id}
-                    className="shrink-0 text-xs hover:opacity-70 disabled:opacity-40" style={{ color: c.inkMuted }}>
-                    {deletingId === topic.id ? "Deleting…" : "✕"}
-                  </button>
                 </div>
 
-                {topic.description && (
-                  <p className="mb-4 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
-                    {topic.description}
-                  </p>
-                )}
-
-                {topic.matched_with && topic.match_id ? (
-                  <div className="space-y-3">
-                    <div className="rounded-xl px-4 py-3 text-sm"
-                      style={{ backgroundColor: c.sageLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.sage}33` }}>
-                      <p className="font-medium" style={{ color: c.sage }}>✓ We found you a match!</p>
-                      <p className="mt-1 mb-3" style={{ color: c.inkSoft }}>
-                        You've been matched with <strong>{topic.matched_with}</strong>.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Link href={`/chat/${topic.match_id}`}
-                          className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white hover:bg-[#2f584b]"
-                          style={{ backgroundColor: c.sage }}>
-                          Say hi →
-                        </Link>
-                        <Link href={`/ai-chat/${topic.id}`}
-                          className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium hover:opacity-90"
-                          style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                          Chat with Aapun AI
-                        </Link>
-                      </div>
-                    </div>
+                {topics.length === 0 ? (
+                  <div className="rounded-2xl p-8 text-center border"
+                    style={{ backgroundColor: c.card, borderColor: c.border }}>
+                    <p className="mb-2 font-medium" style={{ color: c.ink }}>No topics yet</p>
+                    <p className="mb-4 text-sm" style={{ color: c.inkMuted }}>Add your first topic to start finding a peer.</p>
+                    <Link href="/get-started"
+                      className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
+                      style={{ backgroundColor: c.sage }}>
+                      Get started
+                    </Link>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="rounded-xl px-4 py-3 text-sm"
-                      style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}>
-                      <p style={{ color: c.ink }}>
-                        <span style={{ color: c.apricot }}>◎</span> Watching for a match — can AI help in the meantime?
-                      </p>
-                      <Link href={`/ai-chat/${topic.id}`}
-                        className="mt-3 inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white hover:opacity-90"
-                        style={{ backgroundColor: c.apricot }}>
-                        Chat with Aapun AI
-                      </Link>
+                  <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                    {/* Header row */}
+                    <div className="grid grid-cols-3 px-6 py-3 border-b text-xs font-medium uppercase tracking-wider"
+                      style={{ borderColor: c.border, color: c.inkMuted, backgroundColor: "#faf8f5" }}>
+                      <span>Category</span>
+                      <span>Status</span>
+                      <span>Action</span>
                     </div>
 
-                    {insights[topic.id] && (
-                      <div className="rounded-xl px-4 py-3 text-sm leading-relaxed"
-                        style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-                        <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>💡 While you wait</p>
-                        <p style={{ color: c.inkSoft }}>{insights[topic.id]}</p>
+                    {/* Topic rows */}
+                    {allCategories.map((item, i) => (
+                      <div key={item.id}
+                        className={`grid grid-cols-3 items-center px-6 py-4 ${i < allCategories.length - 1 ? "border-b" : ""}`}
+                        style={{ borderColor: c.border }}>
+
+                        {/* Category */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.categories.map((cat) => (
+                            <span key={cat} className="rounded-full px-2.5 py-1 text-xs font-medium"
+                              style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                          {item.matched_with ? (
+                            <span className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: c.sage }}>
+                              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: c.sage }} />
+                              Matched with {item.matched_with}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: c.inkMuted }}>
+                              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: c.apricot }} />
+                              Looking for a match
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Action */}
+                        <div className="flex items-center gap-2">
+                          {item.matched_with && item.match_id ? (
+                            <>
+                              <Link href={`/matches/${encodeURIComponent(item.categories[0])}?matchId=${item.match_id}`}
+                                className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                                style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                                See match →
+                              </Link>
+                              <Link href={`/chat/${item.match_id}`}
+                                className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#2f584b]"
+                                style={{ backgroundColor: c.sage }}>
+                                Chat
+                              </Link>
+                            </>
+                          ) : (
+                            <Link href={`/ai-chat/${item.id}`}
+                              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                              style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
+                              Chat with AI
+                            </Link>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
+              </section>
+
+              {/* Bottom cards */}
+              <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* AI chat card */}
+                <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
+                    style={{ backgroundColor: "rgba(201,122,82,0.2)" }}>
+                    ✦
+                  </div>
+                  <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Chat with Aapun AI</h3>
+                  <p className="mb-4 text-sm leading-relaxed" style={{ color: c.inkSoft }}>
+                    Get support, clarity, and a listening ear — anytime you need it.
+                  </p>
+                  {topics.length > 0 ? (
+                    <Link href={`/ai-chat/${topics[0].id}`}
+                      className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white"
+                      style={{ backgroundColor: c.apricot }}>
+                      Start chatting
+                    </Link>
+                  ) : (
+                    <Link href="/get-started"
+                      className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white"
+                      style={{ backgroundColor: c.apricot }}>
+                      Add a topic first
+                    </Link>
+                  )}
+                </div>
+
+                {/* Privacy card */}
+                <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
+                    style={{ backgroundColor: "rgba(58,107,92,0.15)" }}>
+                    🔒
+                  </div>
+                  <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Your privacy matters</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: c.inkSoft }}>
+                    All conversations are private and only visible to you and your match. Messages are automatically deleted after 3 days.
+                  </p>
+                </div>
+              </section>
+
+              {/* Bottom quote */}
+              <div className="flex items-center gap-3 py-4">
+                <span style={{ color: c.apricot }}>♡</span>
+                <p className="text-sm italic" style={{ color: c.inkMuted }}>
+                  You don't have to go through it alone. We're here, together.
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-function AmbientBackground() {
+// Icons
+function HomeIcon({ size = 20 }: { size?: number }) {
   return (
-    <>
-      <div aria-hidden className="pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full blur-3xl" style={{ backgroundColor: `${c.sage}22` }} />
-      <div aria-hidden className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full blur-3xl" style={{ backgroundColor: `${c.apricot}28` }} />
-    </>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
   );
 }
 
-function AapunMark({ size = 40 }: { size?: number }) {
+function TopicsIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+    </svg>
+  );
+}
+
+function ChatIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function MatchIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function AapunMarkLight({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="15" cy="20" r="11" fill={`${c.sage}33`} stroke={c.sage} strokeWidth="1.5" />
-      <circle cx="25" cy="20" r="11" fill={`${c.apricot}33`} stroke={c.apricot} strokeWidth="1.5" />
+      <circle cx="15" cy="20" r="11" fill="rgba(58,107,92,0.4)" stroke="rgba(58,107,92,0.8)" strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill="rgba(201,122,82,0.4)" stroke="rgba(201,122,82,0.8)" strokeWidth="1.5" />
     </svg>
   );
 }
