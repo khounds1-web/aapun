@@ -44,19 +44,11 @@ export default function Home() {
             <a href="#safety" className="transition-opacity hover:opacity-70">Safety</a>
             <a href="#about" className="transition-opacity hover:opacity-70">About</a>
           </div>
-          <div className="flex items-center gap-3">
-            <SignInButton mode="modal">
-              <button className="text-sm font-medium transition-opacity hover:opacity-70" style={{ color: c.inkSoft }}>
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors"
-                style={{ backgroundColor: c.sage }}>
-                Get Started
-              </button>
-            </SignUpButton>
-          </div>
+          <SignInButton mode="modal">
+            <button className="text-sm font-medium transition-opacity hover:opacity-70" style={{ color: c.inkSoft }}>
+              Sign in
+            </button>
+          </SignInButton>
         </div>
       </nav>
 
@@ -113,8 +105,23 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative hidden lg:block">
-          <Image src="/mugs.png" alt="A conversation between two people" fill className="object-cover" priority />
+        {/* Hero image with gradient blend */}
+        <div className="relative hidden lg:block overflow-hidden">
+          <Image
+            src="/mugs.png"
+            alt="A conversation between two people"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Left fade blend */}
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}88 15%, transparent 40%)`
+          }} />
+          {/* Top fade */}
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(to bottom, ${c.bg} 0%, transparent 15%)`
+          }} />
         </div>
       </section>
 
@@ -180,10 +187,10 @@ export default function Home() {
       {/* About */}
       <section className="px-8 py-16 text-center sm:px-12" id="about">
         <div className="mx-auto max-w-xl">
-        <div className="flex items-center justify-center gap-3 mb-3">
-  <AapunMark size={36} />
-  <h2 className="text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
-</div>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <AapunMark size={36} />
+            <h2 className="text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
+          </div>
           <p className="leading-relaxed" style={{ color: c.inkSoft }}>
             Aapun means <em>my own</em> in Assamese. We built this because sometimes you just need to make a new friend — one who truly gets it. The trusted friend you never knew you had.
           </p>
@@ -195,7 +202,12 @@ export default function Home() {
         <h2 className="mb-6 text-3xl font-semibold tracking-tight" style={{ color: c.ink }}>
           Ready to find your person?
         </h2>
-
+        <SignUpButton mode="modal">
+          <button className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md"
+            style={{ backgroundColor: c.sage }}>
+            Get Started — it's free
+          </button>
+        </SignUpButton>
       </section>
 
       {/* Footer */}
