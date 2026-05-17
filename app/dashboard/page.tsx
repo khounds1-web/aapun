@@ -218,8 +218,9 @@ export default function DashboardPage() {
           <p className="text-base mb-1" style={{ color: c.inkMuted }}>
             {getGreetingEmoji()}
           </p>
-          <h1 className="text-2xl sm:text-3xl font-medium leading-snug mb-4" style={{ color: c.ink }}>            {getGreeting()}<br />{firstName}
-          </h1>
+          <h1 className="text-xl sm:text-3xl font-medium leading-snug mb-4" style={{ color: c.ink }}>
+  {getGreeting()} {firstName}
+</h1>
         </div>
 
         {loading ? (
