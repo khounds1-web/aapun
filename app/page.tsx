@@ -107,13 +107,19 @@ export default function Home() {
 
         {/* Hero image with gradient blend */}
         <div className="relative hidden lg:block overflow-hidden">
-          <Image
-            src="/mugs.png"
-            alt="A conversation between two people"
-            fill
-            className="object-cover"
-            priority
-          />
+  <Image
+    src="/mugs.png"
+    alt="A conversation between two people"
+    fill
+    className="object-cover"
+    priority
+  />
+  <div className="absolute inset-0" style={{
+    background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}99 10%, ${c.bg}44 30%, transparent 55%)`
+  }} />
+  <div className="absolute inset-0" style={{
+    background: `linear-gradient(to bottom, ${c.bg}88 0%, transparent 20%, transparent 80%, ${c.bg}88 100%)`
+  }} />
           {/* Left fade blend */}
           <div className="absolute inset-0" style={{
             background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}88 15%, transparent 40%)`
