@@ -217,10 +217,11 @@ export default function DashboardPage() {
             <span className="text-sm font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/resources" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Read</Link>
-            <Link href="/get-started" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Add space</Link>
-            <UserButton />
-          </div>
+  <Link href="/resources" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Read</Link>
+  <Link href="/notes" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Notes</Link>
+  <Link href="/get-started" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Add space</Link>
+  <UserButton />
+</div>
         </div>
       </header>
 
