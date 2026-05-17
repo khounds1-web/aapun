@@ -180,8 +180,10 @@ export default function Home() {
       {/* About */}
       <section className="px-8 py-16 text-center sm:px-12" id="about">
         <div className="mx-auto max-w-xl">
-          <AapunMark size={48} />
-          <h2 className="mt-4 mb-3 text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
+        <div className="flex items-center justify-center gap-3 mb-3">
+  <AapunMark size={36} />
+  <h2 className="text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
+</div>
           <p className="leading-relaxed" style={{ color: c.inkSoft }}>
             Aapun means <em>my own</em> in Assamese. We built this because sometimes you just need to make a new friend — one who truly gets it. The trusted friend you never knew you had.
           </p>
