@@ -49,9 +49,9 @@ type GroupedCategory = {
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning,";
-  if (hour < 17) return "Good afternoon,";
-  return "Good evening,";
+  if (hour < 12) return "Hope you slept okay,";
+  if (hour < 17) return "Hope your day is treating you well,";
+  return "Hope today was a good one,";
 }
 
 function getGreetingEmoji() {
@@ -221,9 +221,7 @@ export default function DashboardPage() {
           <h1 className="text-4xl sm:text-5xl font-semibold leading-tight mb-4" style={{ color: c.ink }}>
             {getGreeting()}<br />{firstName}
           </h1>
-          <p className="text-base leading-relaxed" style={{ color: c.inkMuted }}>
-            You're showing up for yourself.<br />We're glad you're here.
-          </p>
+               </p>
         </div>
 
         {loading ? (
