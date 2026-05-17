@@ -30,6 +30,7 @@ type Message = {
   sender_photo?: string;
   content: string;
   created_at: string;
+  is_anonymous: boolean;
 };
 
 type MatchInfo = {
@@ -42,7 +43,18 @@ type ProfileInfo = {
   description: string;
 };
 
-function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
+function Avatar({ name, photo, size = 36, isAnonymous = false }: { name: string; photo?: string; size?: number; isAnonymous?: boolean }) {
+  if (isAnonymous) {
+    return (
+      <div className="flex shrink-0 items-center justify-center rounded-full"
+        style={{ width: size, height: size, backgroundColor: c.sageLight }}>
+        <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke={c.sage} strokeWidth="1.5">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+        </svg>
+      </div>
+    );
+  }
+
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const colors = ["#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b", "#6b5c3a", "#3a3a6b", "#6b3a3a"];
   const color = colors[name.charCodeAt(0) % colors.length];
@@ -76,6 +88,12 @@ export default function ChatPage() {
   const [prompts, setPrompts] = useState<string[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // Anonymity state
+  const [anonymityChosen, setAnonymityChosen] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [otherIsAnonymous, setOtherIsAnonymous] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
 
@@ -88,7 +106,6 @@ export default function ChatPage() {
     if (!isLoaded) return;
     if (!user) { router.push("/"); return; }
 
-    // Get current user's profile
     let myProfile: ProfileInfo | null = null;
     let theirProfile: ProfileInfo | null = null;
 
@@ -106,7 +123,6 @@ export default function ChatPage() {
         }
       });
 
-    // Get the other person's profile
     supabase
       .from("profiles")
       .select("user_id, full_name, experience_categories, description")
@@ -121,22 +137,31 @@ export default function ChatPage() {
         }
       });
 
-    // Load messages
     supabase
       .from("messages")
       .select("*")
       .eq("match_id", matchId)
       .order("created_at", { ascending: true })
-      .then(({ data }) => { setMessages(data || []); });
+      .then(({ data }) => {
+        setMessages(data || []);
+        // Check if other person has sent anonymous messages
+        const otherMessages = (data || []).filter((m: Message) => m.sender_id !== user.id);
+        if (otherMessages.some((m: Message) => m.is_anonymous)) {
+          setOtherIsAnonymous(true);
+        }
+      });
 
-    // Real-time subscription
     const channel = supabase
       .channel(`chat:${matchId}`)
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "messages",
         filter: `match_id=eq.${matchId}`,
       }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as Message]);
+        const newMsg = payload.new as Message;
+        setMessages((prev) => [...prev, newMsg]);
+        if (newMsg.sender_id !== user.id && newMsg.is_anonymous) {
+          setOtherIsAnonymous(true);
+        }
       })
       .subscribe();
 
@@ -190,17 +215,68 @@ export default function ChatPage() {
     await supabase.from("messages").insert({
       match_id: matchId,
       sender_id: user.id,
-      sender_name: senderName || "You",
-      sender_photo: user.imageUrl || null,
+      sender_name: isAnonymous ? "A parent" : senderName || "You",
+      sender_photo: isAnonymous ? null : (user.imageUrl || null),
       content: messageToSend,
+      is_anonymous: isAnonymous,
     });
 
     if (matchInfo) {
-      await notifyMessage(matchInfo.recipient_user_id, matchInfo.recipient_name, senderName || "Your match", matchId);
+      await notifyMessage(matchInfo.recipient_user_id, matchInfo.recipient_name, isAnonymous ? "A parent" : senderName || "Your match", matchId);
     }
 
     setNewMessage("");
     setSending(false);
+  }
+
+  // Show anonymity choice screen before first message
+  if (!anonymityChosen) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center font-sans px-6"
+        style={{ backgroundColor: c.bg }}>
+        <div className="w-full max-w-sm">
+          <div className="mb-6 flex items-center gap-2">
+            <AapunMark size={28} />
+            <span className="font-semibold" style={{ color: c.ink }}>Before you say hi</span>
+          </div>
+
+          <div className="rounded-2xl p-6 shadow-sm mb-4"
+            style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+            <h2 className="mb-2 text-lg font-semibold" style={{ color: c.ink }}>
+              How would you like to appear?
+            </h2>
+            <p className="mb-6 text-sm leading-relaxed" style={{ color: c.inkSoft }}>
+              You can chat using your real name or stay anonymous. Your match won't know your identity if you choose anonymous.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => { setIsAnonymous(false); setAnonymityChosen(true); }}
+                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
+                style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}
+              >
+                <p className="font-medium text-sm" style={{ color: c.sage }}>Use my name — {senderName || "..."}</p>
+                <p className="text-xs mt-1" style={{ color: c.inkMuted }}>Your name and photo will be visible</p>
+              </button>
+
+              <button
+                onClick={() => { setIsAnonymous(true); setAnonymityChosen(true); }}
+                className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
+                style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}
+              >
+                <p className="font-medium text-sm" style={{ color: c.apricot }}>Stay anonymous</p>
+                <p className="text-xs mt-1" style={{ color: c.inkMuted }}>You'll appear as "A parent" with no photo</p>
+              </button>
+            </div>
+          </div>
+
+          <Link href="/dashboard" className="text-xs text-center block transition-opacity hover:opacity-70"
+            style={{ color: c.inkMuted }}>
+            ← Back to dashboard
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -213,20 +289,25 @@ export default function ChatPage() {
         </Link>
         <div className="flex items-center gap-2">
           <AapunMark size={28} />
-          <span className="font-semibold" style={{ color: c.ink }}>Your conversation</span>
+          <div>
+            <span className="font-semibold" style={{ color: c.ink }}>Your conversation</span>
+            {isAnonymous && (
+              <p className="text-xs" style={{ color: c.apricot }}>You're chatting anonymously</p>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Privacy notice */}
+      {/* Privacy + anonymity notice */}
       <div className="px-6 py-2 text-center text-xs" style={{ backgroundColor: c.sageLight, color: c.inkMuted }}>
-        🔒 Private conversation — messages are automatically deleted after 3 days.
+        🔒 Private conversation — messages deleted after 3 days.
+        {otherIsAnonymous && " Your match has chosen to stay anonymous."}
       </div>
 
       {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
 
-          {/* Prompts — only show when no messages yet */}
           {messages.length === 0 && !loadingPrompts && prompts.length > 0 && (
             <div className="mb-4">
               <p className="mb-3 text-center text-xs font-medium" style={{ color: c.inkMuted }}>
@@ -234,12 +315,9 @@ export default function ChatPage() {
               </p>
               <div className="flex flex-col gap-2">
                 {prompts.map((prompt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(prompt)}
+                  <button key={i} onClick={() => sendMessage(prompt)}
                     className="rounded-2xl px-4 py-3 text-sm text-left transition-colors hover:opacity-80"
-                    style={{ backgroundColor: c.sageLight, color: c.sage, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
-                  >
+                    style={{ backgroundColor: c.sageLight, color: c.sage, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
                     {prompt}
                   </button>
                 ))}
@@ -255,9 +333,15 @@ export default function ChatPage() {
 
           {messages.map((msg) => {
             const isMe = msg.sender_id === user?.id;
+            const anonymous = msg.is_anonymous;
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                <Avatar name={msg.sender_name} photo={msg.sender_photo} size={32} />
+                <Avatar
+                  name={msg.sender_name}
+                  photo={anonymous ? undefined : msg.sender_photo}
+                  size={32}
+                  isAnonymous={anonymous && !isMe}
+                />
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isMe ? "rounded-br-sm" : "rounded-bl-sm"}`}
                   style={
@@ -266,7 +350,11 @@ export default function ChatPage() {
                       : { backgroundColor: c.card, color: c.ink, borderWidth: 1, borderStyle: "solid", borderColor: c.border }
                   }
                 >
-                  {!isMe && <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>{msg.sender_name}</p>}
+                  {!isMe && (
+                    <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>
+                      {anonymous ? "A parent" : msg.sender_name}
+                    </p>
+                  )}
                   {msg.content}
                 </div>
               </div>
@@ -293,7 +381,7 @@ export default function ChatPage() {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Say something…"
+              placeholder={isAnonymous ? "Say something anonymously…" : "Say something…"}
               className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
               style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink }}
             />
