@@ -34,8 +34,9 @@ export default function MatchesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const matchId = searchParams.get("matchId");
+  const idsParam = searchParams.get("ids");
 
-  const [match, setMatch] = useState<Match | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient(
@@ -46,19 +47,37 @@ export default function MatchesPage() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { router.push("/"); return; }
-    if (!matchId) { router.push("/dashboard"); return; }
 
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("match_id", matchId)
-      .single()
-      .then(({ data }) => {
-        setMatch(data);
-        setLoading(false);
-      });
-  }, [isLoaded, user, matchId]);
+    if (matchId) {
+      // Single match
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("match_id", matchId)
+        .single()
+        .then(({ data }) => {
+          if (data) setMatches([data]);
+          setLoading(false);
+        });
+    } else if (idsParam) {
+      // Multiple matches
+      const ids = idsParam.split(",");
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("match_id", ids)
+        .then(({ data }) => {
+          setMatches(data || []);
+          setLoading(false);
+        });
+    } else {
+      router.push("/dashboard");
+    }
+  }, [isLoaded, user, matchId, idsParam]);
+
+  const isMultiple = matches.length > 1;
 
   return (
     <div className="min-h-full font-sans" style={{ backgroundColor: c.bg }}>
@@ -69,43 +88,44 @@ export default function MatchesPage() {
           ← Back to dashboard
         </Link>
 
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>
+            {isMultiple ? "Your matches" : "Your match"}
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
+            {isMultiple
+              ? "You've been matched with multiple parents who share your experience."
+              : "You've been matched with someone who shares your experience."}
+          </p>
+        </div>
+
         {loading ? (
           <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
-        ) : !match ? (
-          <p className="text-sm" style={{ color: c.inkMuted }}>Match not found.</p>
+        ) : matches.length === 0 ? (
+          <p className="text-sm" style={{ color: c.inkMuted }}>No matches found.</p>
         ) : (
-          <div>
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>
-                Your match
-              </h1>
-              <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
-                You've been matched with someone who shares your experience.
-              </p>
-            </div>
-
-            {/* Match card */}
-            <div className="rounded-2xl border p-6 mb-6" style={{ backgroundColor: c.card, borderColor: c.border }}>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full text-white font-semibold mb-3"
-                    style={{ backgroundColor: c.sage, fontSize: 18 }}>
-                    {match.matched_with?.charAt(0).toUpperCase()}
+          <div className="space-y-4">
+            {matches.map((match) => (
+              <div key={match.id} className="rounded-2xl border p-6"
+                style={{ backgroundColor: c.card, borderColor: c.border }}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full text-white font-semibold"
+                      style={{ backgroundColor: c.sage, fontSize: 18 }}>
+                      {match.matched_with?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h2 className="font-semibold" style={{ color: c.ink }}>{match.matched_with}</h2>
+                      <p className="text-xs" style={{ color: c.inkMuted }}>Your peer match</p>
+                    </div>
                   </div>
-                  <h2 className="text-xl font-semibold" style={{ color: c.ink }}>{match.matched_with}</h2>
-                  <p className="text-sm" style={{ color: c.inkMuted }}>Your peer match</p>
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+                    style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                    ✓ Matched
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-                  style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                  ✓ Matched
-                </span>
-              </div>
 
-              <div className="mb-4">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider" style={{ color: c.inkMuted }}>
-                  Shared experience
-                </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="mb-4 flex flex-wrap gap-2">
                   {match.experience_categories.map((cat) => (
                     <span key={cat} className="rounded-full px-3 py-1 text-xs font-medium"
                       style={{ backgroundColor: c.sageLight, color: c.sage }}>
@@ -113,30 +133,19 @@ export default function MatchesPage() {
                     </span>
                   ))}
                 </div>
-              </div>
 
-              <div className="rounded-xl p-4 text-sm leading-relaxed"
-                style={{ backgroundColor: c.bg, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-                <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>Privacy reminder</p>
-                <p style={{ color: c.inkSoft }}>
-                  🔒 This conversation is private and messages are deleted after 3 days.
-                </p>
-              </div>
-            </div>
+                <div className="mb-4 rounded-xl p-3 text-xs"
+                  style={{ backgroundColor: c.bg, borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.inkMuted }}>
+                  🔒 Private conversation — messages deleted after 3 days.
+                </div>
 
-            {/* CTA */}
-            <div className="flex gap-3">
-              <Link href={`/chat/${match.match_id}`}
-                className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#2f584b]"
-                style={{ backgroundColor: c.sage }}>
-                Start conversation →
-              </Link>
-              <Link href="/dashboard"
-                className="inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-medium transition-colors hover:bg-black/5"
-                style={{ color: c.inkSoft }}>
-                Back to dashboard
-              </Link>
-            </div>
+                <Link href={`/chat/${match.match_id}`}
+                  className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#2f584b]"
+                  style={{ backgroundColor: c.sage }}>
+                  Start conversation →
+                </Link>
+              </div>
+            ))}
           </div>
         )}
       </main>

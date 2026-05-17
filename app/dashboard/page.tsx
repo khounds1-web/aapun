@@ -35,6 +35,13 @@ type Topic = {
   match_id?: string;
 };
 
+type GroupedCategory = {
+  category: string;
+  topics: Topic[];
+  matches: Topic[];
+  unmatched: Topic[];
+};
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -82,15 +89,31 @@ export default function DashboardPage() {
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
 
-  // Group all categories with their match status
-  const allCategories = topics.map(t => ({
-    id: t.id,
-    category: t.experience_categories[0] || "General",
-    categories: t.experience_categories,
-    matched_with: t.matched_with,
-    match_id: t.match_id,
-    description: t.description,
-  }));
+  // Group topics by their first category
+  const groupedCategories: GroupedCategory[] = [];
+  const seen = new Map<string, GroupedCategory>();
+
+  topics.forEach((topic) => {
+    const cats = topic.experience_categories;
+    const key = cats.join(",");
+    if (!seen.has(key)) {
+      const group: GroupedCategory = {
+        category: cats[0] || "General",
+        topics: [],
+        matches: [],
+        unmatched: [],
+      };
+      seen.set(key, group);
+      groupedCategories.push(group);
+    }
+    const group = seen.get(key)!;
+    group.topics.push(topic);
+    if (topic.matched_with) {
+      group.matches.push(topic);
+    } else {
+      group.unmatched.push(topic);
+    }
+  });
 
   const navItems = [
     { id: "home", label: "Home", icon: HomeIcon },
@@ -106,31 +129,20 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="hidden lg:flex w-60 flex-col fixed inset-y-0 left-0 z-10"
         style={{ backgroundColor: c.sidebar }}>
-
-        {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-6">
           <AapunMarkLight size={32} />
           <span className="text-lg font-semibold text-white">Aapun</span>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeNav === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveNav(item.id);
-                  if (item.href) router.push(item.href);
-                }}
+              <button key={item.id}
+                onClick={() => { setActiveNav(item.id); if (item.href) router.push(item.href); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
-                style={{
-                  backgroundColor: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                  color: isActive ? c.sidebarActive : c.sidebarText,
-                }}
-              >
+                style={{ backgroundColor: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: isActive ? c.sidebarActive : c.sidebarText }}>
                 <Icon size={18} />
                 {item.label}
               </button>
@@ -138,7 +150,6 @@ export default function DashboardPage() {
           })}
         </nav>
 
-        {/* Sidebar footer card */}
         <div className="mx-3 mb-4 rounded-2xl overflow-hidden relative" style={{ height: 160 }}>
           <Image src="/mugs.png" alt="Aapun" fill className="object-cover opacity-60" />
           <div className="absolute inset-0 p-4 flex flex-col justify-end"
@@ -148,10 +159,8 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <div className="flex-1 lg:ml-60 flex flex-col min-h-full">
-
-        {/* Top bar */}
         <header className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b"
           style={{ backgroundColor: c.bg, borderColor: c.border }}>
           <div>
@@ -172,24 +181,20 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 px-8 py-8">
-
           {loading ? (
             <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
           ) : (
             <div className="max-w-4xl space-y-8">
 
-              {/* Topics section */}
+              {/* Topics table */}
               <section>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold" style={{ color: c.ink }}>Your topics</h2>
-                    <p className="text-sm" style={{ color: c.inkMuted }}>Each topic is looking for a peer who gets it.</p>
-                  </div>
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold" style={{ color: c.ink }}>Your topics</h2>
+                  <p className="text-sm" style={{ color: c.inkMuted }}>Each topic is looking for a peer who gets it.</p>
                 </div>
 
-                {topics.length === 0 ? (
+                {groupedCategories.length === 0 ? (
                   <div className="rounded-2xl p-8 text-center border"
                     style={{ backgroundColor: c.card, borderColor: c.border }}>
                     <p className="mb-2 font-medium" style={{ color: c.ink }}>No topics yet</p>
@@ -202,7 +207,6 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                    {/* Header row */}
                     <div className="grid grid-cols-3 px-6 py-3 border-b text-xs font-medium uppercase tracking-wider"
                       style={{ borderColor: c.border, color: c.inkMuted, backgroundColor: "#faf8f5" }}>
                       <span>Category</span>
@@ -210,15 +214,14 @@ export default function DashboardPage() {
                       <span>Action</span>
                     </div>
 
-                    {/* Topic rows */}
-                    {allCategories.map((item, i) => (
-                      <div key={item.id}
-                        className={`grid grid-cols-3 items-center px-6 py-4 ${i < allCategories.length - 1 ? "border-b" : ""}`}
+                    {groupedCategories.map((group, i) => (
+                      <div key={i}
+                        className={`grid grid-cols-3 items-center px-6 py-4 ${i < groupedCategories.length - 1 ? "border-b" : ""}`}
                         style={{ borderColor: c.border }}>
 
-                        {/* Category */}
+                        {/* Category tags */}
                         <div className="flex flex-wrap gap-1.5">
-                          {item.categories.map((cat) => (
+                          {group.topics[0].experience_categories.map((cat) => (
                             <span key={cat} className="rounded-full px-2.5 py-1 text-xs font-medium"
                               style={{ backgroundColor: c.sageLight, color: c.sage }}>
                               {cat}
@@ -228,14 +231,16 @@ export default function DashboardPage() {
 
                         {/* Status */}
                         <div>
-                          {item.matched_with ? (
+                          {group.matches.length > 0 ? (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: c.sage }}>
-                              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: c.sage }} />
-                              Matched with {item.matched_with}
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.sage }} />
+                              {group.matches.length === 1
+                                ? `Matched with ${group.matches[0].matched_with}`
+                                : `${group.matches.length} matches`}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: c.inkMuted }}>
-                              <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: c.apricot }} />
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.apricot }} />
                               Looking for a match
                             </span>
                           )}
@@ -243,21 +248,29 @@ export default function DashboardPage() {
 
                         {/* Action */}
                         <div className="flex items-center gap-2">
-                          {item.matched_with && item.match_id ? (
+                          {group.matches.length === 1 && group.matches[0].match_id ? (
                             <>
-                              <Link href={`/matches/${encodeURIComponent(item.categories[0])}?matchId=${item.match_id}`}
+                              <Link
+                                href={`/matches/${encodeURIComponent(group.category)}?matchId=${group.matches[0].match_id}`}
                                 className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
                                 style={{ backgroundColor: c.sageLight, color: c.sage }}>
                                 See match →
                               </Link>
-                              <Link href={`/chat/${item.match_id}`}
+                              <Link href={`/chat/${group.matches[0].match_id}`}
                                 className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#2f584b]"
                                 style={{ backgroundColor: c.sage }}>
                                 Chat
                               </Link>
                             </>
+                          ) : group.matches.length > 1 ? (
+                            <Link
+                              href={`/matches/${encodeURIComponent(group.category)}?ids=${group.matches.map(m => m.match_id).join(",")}`}
+                              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                              style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                              See all matches →
+                            </Link>
                           ) : (
-                            <Link href={`/ai-chat/${item.id}`}
+                            <Link href={`/ai-chat/${group.topics[0].id}`}
                               className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
                               style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
                               Chat with AI
@@ -272,12 +285,9 @@ export default function DashboardPage() {
 
               {/* Bottom cards */}
               <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* AI chat card */}
                 <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
-                    style={{ backgroundColor: "rgba(201,122,82,0.2)" }}>
-                    ✦
-                  </div>
+                    style={{ backgroundColor: "rgba(201,122,82,0.2)" }}>✦</div>
                   <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Chat with Aapun AI</h3>
                   <p className="mb-4 text-sm leading-relaxed" style={{ color: c.inkSoft }}>
                     Get support, clarity, and a listening ear — anytime you need it.
@@ -297,12 +307,9 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Privacy card */}
                 <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
-                    style={{ backgroundColor: "rgba(58,107,92,0.15)" }}>
-                    🔒
-                  </div>
+                    style={{ backgroundColor: "rgba(58,107,92,0.15)" }}>🔒</div>
                   <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Your privacy matters</h3>
                   <p className="text-sm leading-relaxed" style={{ color: c.inkSoft }}>
                     All conversations are private and only visible to you and your match. Messages are automatically deleted after 3 days.
@@ -310,7 +317,6 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              {/* Bottom quote */}
               <div className="flex items-center gap-3 py-4">
                 <span style={{ color: c.apricot }}>♡</span>
                 <p className="text-sm italic" style={{ color: c.inkMuted }}>
@@ -326,7 +332,6 @@ export default function DashboardPage() {
   );
 }
 
-// Icons
 function HomeIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
