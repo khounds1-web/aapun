@@ -261,7 +261,7 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                  Thoughtfully chosen
+                  Thoughtfully chosen for you
                 </h2>
                 <Link href="/resources" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
                   See all

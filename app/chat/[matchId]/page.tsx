@@ -13,13 +13,13 @@ const c = {
   ink: "#1c2824",
   inkSoft: "#4a5c56",
   inkMuted: "#6d8078",
-  sage: "#3a6b5c",
-  sageDark: "#2f584b",
-  sageLight: "#e4ede9",
+  sage: "#6b5b9e",
+  sageDark: "#574a85",
+  sageLight: "#ede8f8",
   apricot: "#c97a52",
   apricotLight: "#f3e4db",
   card: "rgba(255, 255, 255, 0.85)",
-  border: "#d8e4de",
+  border: "#ece7f5",
 } as const;
 
 type Message = {
@@ -56,14 +56,11 @@ function Avatar({ name, photo, size = 36, isAnonymous = false }: { name: string;
   }
 
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-  const colors = ["#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b", "#6b5c3a", "#3a3a6b", "#6b3a3a"];
+  const colors = ["#6b5b9e", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b", "#6b5c3a", "#3a3a6b", "#6b3a3a"];
   const color = colors[name.charCodeAt(0) % colors.length];
 
   if (photo) {
-    return (
-      <img src={photo} alt={name} width={size} height={size}
-        className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />
-    );
+    return <img src={photo} alt={name} width={size} height={size} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />;
   }
 
   return (
@@ -88,8 +85,7 @@ export default function ChatPage() {
   const [prompts, setPrompts] = useState<string[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-  // Anonymity state
+  const [authorized, setAuthorized] = useState(false);
   const [anonymityChosen, setAnonymityChosen] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [otherIsAnonymous, setOtherIsAnonymous] = useState(false);
@@ -109,6 +105,7 @@ export default function ChatPage() {
     let myProfile: ProfileInfo | null = null;
     let theirProfile: ProfileInfo | null = null;
 
+    // SECURITY CHECK — verify this user owns this chat
     supabase
       .from("profiles")
       .select("full_name, experience_categories, description")
@@ -116,13 +113,18 @@ export default function ChatPage() {
       .eq("match_id", matchId)
       .limit(1)
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          setSenderName(data[0].full_name);
-          myProfile = { experience_categories: data[0].experience_categories, description: data[0].description };
-          if (theirProfile) generatePrompts(myProfile, theirProfile);
+        if (!data || data.length === 0) {
+          // Not their chat — redirect to dashboard
+          router.push("/dashboard");
+          return;
         }
+        setAuthorized(true);
+        setSenderName(data[0].full_name);
+        myProfile = { experience_categories: data[0].experience_categories, description: data[0].description };
+        if (theirProfile) generatePrompts(myProfile, theirProfile);
       });
 
+    // Get the other person's profile
     supabase
       .from("profiles")
       .select("user_id, full_name, experience_categories, description")
@@ -137,6 +139,7 @@ export default function ChatPage() {
         }
       });
 
+    // Load messages
     supabase
       .from("messages")
       .select("*")
@@ -144,13 +147,13 @@ export default function ChatPage() {
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         setMessages(data || []);
-        // Check if other person has sent anonymous messages
         const otherMessages = (data || []).filter((m: Message) => m.sender_id !== user.id);
         if (otherMessages.some((m: Message) => m.is_anonymous)) {
           setOtherIsAnonymous(true);
         }
       });
 
+    // Real-time subscription
     const channel = supabase
       .channel(`chat:${matchId}`)
       .on("postgres_changes", {
@@ -222,17 +225,26 @@ export default function ChatPage() {
     });
 
     if (matchInfo) {
-      await notifyMessage(matchInfo.recipient_user_id, matchInfo.recipient_name, isAnonymous ? "A parent" : senderName || "Your match", matchId);
+      await notifyMessage(matchInfo.recipient_user_id, matchInfo.recipient_name, isAnonymous ? "Someone" : senderName || "Your match", matchId);
     }
 
     setNewMessage("");
     setSending(false);
   }
 
-  // Show anonymity choice screen before first message
+  // Loading state
+  if (!isLoaded || (isLoaded && !authorized && senderName === "")) {
+    return (
+      <div className="flex min-h-screen items-center justify-center font-sans" style={{ backgroundColor: c.bg }}>
+        <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
+      </div>
+    );
+  }
+
+  // Anonymity choice screen
   if (!anonymityChosen) {
     return (
-      <div className="flex min-h-full flex-col items-center justify-center font-sans px-6"
+      <div className="flex min-h-screen flex-col items-center justify-center font-sans px-6"
         style={{ backgroundColor: c.bg }}>
         <div className="w-full max-w-sm">
           <div className="mb-6 flex items-center gap-2">
@@ -253,17 +265,15 @@ export default function ChatPage() {
               <button
                 onClick={() => { setIsAnonymous(false); setAnonymityChosen(true); }}
                 className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
-                style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}
-              >
-                <p className="font-medium text-sm" style={{ color: c.sage }}>Use my name — {senderName || "..."}</p>
+                style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}>
+                <p className="font-medium text-sm" style={{ color: c.sage }}>Use my name — {senderName}</p>
                 <p className="text-xs mt-1" style={{ color: c.inkMuted }}>Your name and photo will be visible</p>
               </button>
 
               <button
                 onClick={() => { setIsAnonymous(true); setAnonymityChosen(true); }}
                 className="w-full rounded-xl p-4 text-left transition-colors hover:opacity-90 border"
-                style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}
-              >
+                style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
                 <p className="font-medium text-sm" style={{ color: c.apricot }}>Stay anonymous</p>
                 <p className="text-xs mt-1" style={{ color: c.inkMuted }}>You'll appear as "A parent" with no photo</p>
               </button>
@@ -280,7 +290,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col font-sans" style={{ backgroundColor: c.bg }}>
+    <div className="flex min-h-screen flex-col font-sans" style={{ backgroundColor: c.bg }}>
       {/* Header */}
       <header className="flex shrink-0 items-center gap-4 border-b px-6 py-4"
         style={{ backgroundColor: c.card, borderColor: c.border }}>
@@ -298,9 +308,9 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* Privacy + anonymity notice */}
+      {/* Privacy notice */}
       <div className="px-6 py-2 text-center text-xs" style={{ backgroundColor: c.sageLight, color: c.inkMuted }}>
-        🔒 Private conversation — messages deleted after 3 days.
+        🔒 Private conversation — messages are automatically deleted after 3 days.
         {otherIsAnonymous && " Your match has chosen to stay anonymous."}
       </div>
 
@@ -336,20 +346,12 @@ export default function ChatPage() {
             const anonymous = msg.is_anonymous;
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                <Avatar
-                  name={msg.sender_name}
-                  photo={anonymous ? undefined : msg.sender_photo}
-                  size={32}
-                  isAnonymous={anonymous && !isMe}
-                />
+                <Avatar name={msg.sender_name} photo={anonymous ? undefined : msg.sender_photo} size={32} isAnonymous={anonymous && !isMe} />
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isMe ? "rounded-br-sm" : "rounded-bl-sm"}`}
-                  style={
-                    isMe
-                      ? { backgroundColor: c.sage, color: "#fff" }
-                      : { backgroundColor: c.card, color: c.ink, borderWidth: 1, borderStyle: "solid", borderColor: c.border }
-                  }
-                >
+                  style={isMe
+                    ? { backgroundColor: c.sage, color: "#fff" }
+                    : { backgroundColor: c.card, color: c.ink, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
                   {!isMe && (
                     <p className="mb-1 text-xs font-medium" style={{ color: c.inkMuted }}>
                       {anonymous ? "A parent" : msg.sender_name}
@@ -382,11 +384,11 @@ export default function ChatPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
               placeholder={isAnonymous ? "Say something anonymously…" : "Say something…"}
-              className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
+              className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2"
               style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink }}
             />
             <button onClick={() => sendMessage()} disabled={!newMessage.trim() || sending}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-[#2f584b] disabled:opacity-40"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors disabled:opacity-40"
               style={{ backgroundColor: c.sage }}>
               ↑
             </button>
@@ -400,8 +402,8 @@ export default function ChatPage() {
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="15" cy="20" r="11" fill={`${c.sage}33`} stroke={c.sage} strokeWidth="1.5" />
-      <circle cx="25" cy="20" r="11" fill={`${c.apricot}33`} stroke={c.apricot} strokeWidth="1.5" />
+      <circle cx="15" cy="20" r="11" fill="rgba(107,91,158,0.25)" stroke="rgba(107,91,158,0.6)" strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill="rgba(201,122,82,0.25)" stroke="rgba(201,122,82,0.6)" strokeWidth="1.5" />
     </svg>
   );
 }
