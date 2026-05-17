@@ -1,34 +1,13 @@
 // app/api/cron-resources/route.ts
-// Daily cron job — Claude finds 3 new resources per category
+// Daily cron — pulls categories from profiles, adds 3 new resources per category
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 
-const CATEGORIES = [
-  "Postpartum depression/anxiety",
-  "NICU parents",
-  "First-time parents",
-  "Balancing careers and parenting",
-  "Single parents",
-  "IVF",
-  "Pregnancy loss & miscarriage",
-  "Parents of neurodivergent children",
-  "Parents of autistic children",
-  "Immigrant parents",
-  "Breastfeeding/Pumping/Formula feeding",
-  "Planning to conceive soon",
-  "Co-parenting after divorce",
-  "Stay-at-home moms/dads",
-  "Parenting with a partner who doesn't share the load",
-  "Hiring a nanny/caregiver",
-  "Other",
-];
-
 const COVER_COLORS = ["#e8e2d4", "#ddd4e8", "#d4e4d8", "#d4dce8", "#e8d4d4", "#d4e8e4"];
 
 export async function GET(request: Request) {
-  // Verify cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,9 +20,28 @@ export async function GET(request: Request) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  // Pull all unique categories from profiles — fully dynamic
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("experience_categories");
+
+  if (profilesError) {
+    return NextResponse.json({ error: profilesError.message }, { status: 500 });
+  }
+
+  const allCategories = Array.from(
+    new Set(
+      (profiles || []).flatMap((p: { experience_categories: string[] }) => p.experience_categories)
+    )
+  ).filter(Boolean);
+
+  if (allCategories.length === 0) {
+    return NextResponse.json({ message: "No categories found" });
+  }
+
   const results = [];
 
-  for (const category of CATEGORIES) {
+  for (const category of allCategories) {
     try {
       // Get existing titles to avoid duplicates
       const { data: existing } = await supabase
@@ -64,7 +62,7 @@ Rules:
 - Real, existing resources with working websites
 - Mix of podcasts and books (at least 1 of each)
 - Free to access or widely available
-- Do NOT include any of these (already in our library): ${existingTitles.join(", ")}
+- Do NOT include any of these already in our library: ${existingTitles.join(", ")}
 - Link to podcast website (not Spotify) or Goodreads for books
 
 Return ONLY a JSON array, no other text:
@@ -74,7 +72,7 @@ Return ONLY a JSON array, no other text:
     "title": "Title",
     "subtitle": "Author or show description — one line",
     "link": "https://...",
-    "cover_text": "Short\n2-3 word\ncover text"
+    "cover_text": "Short 2-3 word cover text"
   }
 ]`
         }]
@@ -104,5 +102,5 @@ Return ONLY a JSON array, no other text:
     }
   }
 
-  return NextResponse.json({ success: true, results });
+  return NextResponse.json({ success: true, categories: allCategories.length, results });
 }
