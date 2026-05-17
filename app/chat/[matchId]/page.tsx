@@ -153,6 +153,13 @@ export default function ChatPage() {
         }
       });
 
+    // Mark messages as read
+    supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("match_id", matchId)
+      .neq("sender_id", user.id);
+
     // Real-time subscription
     const channel = supabase
       .channel(`chat:${matchId}`)
