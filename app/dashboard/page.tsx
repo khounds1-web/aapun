@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { getResourcesForCategories, DEFAULT_RESOURCES, type Resource } from "@/app/lib/resources";
 
 const c = {
   bg: "#faf9fc",
@@ -19,12 +20,6 @@ const c = {
   border: "#f0ebf8",
   green: "#5a7c65",
 } as const;
-
-const RESOURCES = [
-  { type: "read", title: "Nobody Told Me", subtitle: "About Becoming a Mom — Heather McNamara", coverBg: "#e8e2d4", coverText: "Nobody\nTold Me" },
-  { type: "listen", title: "The Lavender Hour", subtitle: "Ep. 42 · The invisible load no one talks about", coverBg: "#ddd4e8", coverText: "THE\nLAVENDER\nHOUR" },
-  { type: "read", title: "Good Inside", subtitle: "Dr. Becky Kennedy", coverBg: "#d4e4d8", coverText: "Good\nInside" },
-];
 
 type Topic = {
   id: string;
@@ -101,6 +96,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resources, setResources] = useState<Resource[]>(DEFAULT_RESOURCES);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,8 +117,15 @@ export default function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) console.error(error);
-    setTopics(data || []);
+    const topicsData = data || [];
+    setTopics(topicsData);
     setLoading(false);
+
+    // Get all unique categories across all user's topics
+    const allCategories = Array.from(
+      new Set(topicsData.flatMap((t: Topic) => t.experience_categories))
+    );
+    setResources(getResourcesForCategories(allCategories));
   }
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
@@ -269,7 +272,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Thoughtfully chosen */}
+            {/* Thoughtfully chosen — dynamic per user categories */}
             <section>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
@@ -280,9 +283,9 @@ export default function DashboardPage() {
                 </Link>
               </div>
               <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                {RESOURCES.map((res, i) => (
-                  <Link href="/resources" key={i}
-                    className={`flex items-center gap-4 px-5 py-4 transition-opacity hover:opacity-70 ${i < RESOURCES.length - 1 ? "border-b" : ""}`}
+                {resources.map((res, i) => (
+                  <a href={res.link} target="_blank" rel="noopener noreferrer" key={i}
+                    className={`flex items-center gap-4 px-5 py-4 transition-opacity hover:opacity-70 ${i < resources.length - 1 ? "border-b" : ""}`}
                     style={{ borderColor: c.border }}>
                     <BookCover bg={res.coverBg} text={res.coverText} />
                     <div className="flex-1 min-w-0">
@@ -293,7 +296,7 @@ export default function DashboardPage() {
                       style={{ backgroundColor: c.sageLight, color: c.sage }}>
                       {res.type === "read" ? "Read" : "Listen"}
                     </span>
-                  </Link>
+                  </a>
                 ))}
               </div>
             </section>
