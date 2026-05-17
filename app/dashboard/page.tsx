@@ -389,7 +389,7 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
-  );
+  )
 }
 
 function AapunMark({ size = 40 }: { size?: number }) {
