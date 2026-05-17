@@ -189,7 +189,7 @@ export default function Home() {
           <AapunMark size={48} />
           <h2 className="mt-4 mb-3 text-2xl font-semibold tracking-tight" style={{ color: c.ink }}>About Aapun</h2>
           <p className="leading-relaxed" style={{ color: c.inkSoft }}>
-            Aapun means <em>my own</em> in Assamese — close ones, kinsfolk, your people. We built this because parenting can be isolating, and sometimes you just need to talk to someone who's been there. Not a professional. Not a friend with opinions. Just a parent who gets it.
+          Aapun means <em>my own</em> in Assamese. We built this because sometimes you just need to make a new friend — one who truly gets it.
           </p>
         </div>
       </section>
