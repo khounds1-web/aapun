@@ -140,7 +140,6 @@ export default function DashboardPage() {
   }
 
   async function loadDailyResources(userId: string, categories: string[]) {
-    // Get resources the user has already seen
     const { data: seenData } = await supabase
       .from("user_seen_resources")
       .select("resource_id")
@@ -148,7 +147,6 @@ export default function DashboardPage() {
 
     const seenIds = (seenData || []).map((r: { resource_id: string }) => r.resource_id);
 
-    // Get 2 unseen resources from user's categories
     let query = supabase
       .from("resources")
       .select("*")
@@ -162,12 +160,10 @@ export default function DashboardPage() {
     const { data: available } = await query;
 
     if (!available || available.length === 0) {
-      // All seen — reset and start again
       setResources([]);
       return;
     }
 
-    // Use date as seed to pick deterministically but differently each day
     const today = new Date();
     const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
     const startIndex = seed % available.length;
@@ -179,7 +175,6 @@ export default function DashboardPage() {
 
     setResources(picked);
 
-    // Mark as seen
     if (picked.length > 0) {
       await supabase.from("user_seen_resources").insert(
         picked.map((r) => ({ user_id: userId, resource_id: r.id }))
@@ -194,7 +189,10 @@ export default function DashboardPage() {
   topics.forEach((topic) => {
     const key = topic.experience_categories.join(",");
     if (!seen.has(key)) {
-      const group: GroupedCategory = { category: topic.experience_categories[0] || "General", topics: [], matches: [], unmatched: [] };
+      const group: GroupedCategory = {
+        category: topic.experience_categories[0] || "General",
+        topics: [], matches: [], unmatched: [],
+      };
       seen.set(key, group);
       groupedCategories.push(group);
     }
@@ -217,11 +215,11 @@ export default function DashboardPage() {
             <span className="text-sm font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</span>
           </div>
           <div className="flex items-center gap-6">
-  <Link href="/resources" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Read</Link>
-  <Link href="/notes" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Notes</Link>
-  <Link href="/get-started" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Add space</Link>
-  <UserButton />
-</div>
+            <Link href="/resources" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Read</Link>
+            <Link href="/notes" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Notes</Link>
+            <Link href="/get-started" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.inkMuted }}>Add space</Link>
+            <UserButton />
+          </div>
         </div>
       </header>
 
@@ -239,12 +237,14 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm pb-16" style={{ color: c.inkMuted }}>Loading…</p>
+          <p className="text-sm pb-16" style={{ color: c.inkMuted }}>Loading...</p>
         ) : (
           <div className="space-y-10 pb-20">
 
-            {/* Your spaces + AI card */}
+            {/* Your spaces + right column */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+              {/* Topic cards */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -292,13 +292,13 @@ export default function DashboardPage() {
                           <Link href={`/chat/${group.matches[0].match_id}`}
                             className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
                             style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                            Spend time together ›
+                            Spend time together
                           </Link>
                         ) : (
                           <Link href={`/ai-chat/${group.topics[0].id}`}
                             className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
                             style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
-                            Reflect with AI ›
+                            Reflect with AI
                           </Link>
                         )}
                       </div>
@@ -308,47 +308,49 @@ export default function DashboardPage() {
               </div>
 
               {/* Right column — AI + Notes */}
-<div className="w-full lg:w-72 shrink-0 space-y-4">
-  {/* AI card */}
-  <Link href={aiHref}
-    className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
-    style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
-      style={{ backgroundColor: `${c.sage}22` }}>
-      <span style={{ color: c.sage }}>✦</span>
-    </div>
-    <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
-      Need a quiet space to talk things through?
-    </h3>
-    <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
-      Aapun AI is here to listen — whenever you need.
-    </p>
-    <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white"
-      style={{ backgroundColor: c.sage }}>
-      Talk with Aapun AI →
-    </span>
-  </Link>
+              <div className="w-full lg:w-72 shrink-0 space-y-4">
 
-  {/* Notes card */}
-  <Link href="/notes"
-    className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
-    style={{ backgroundColor: c.card, borderColor: c.border }}>
-    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
-      style={{ backgroundColor: c.sageLight }}>
-      <span style={{ color: c.sage }}>✏️</span>
-    </div>
-    <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
-      Notes for the day
-    </h3>
-    <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
-      A private space for your thoughts. Only you can see these.
-    </p>
-    <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
-      style={{ backgroundColor: c.sageLight, color: c.sage }}>
-      Write a note →
-    </span>
-  </Link>
-</div>
+                {/* AI card */}
+                <Link href={aiHref}
+                  className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
+                    style={{ backgroundColor: `${c.sage}22` }}>
+                    <span style={{ color: c.sage }}>✦</span>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+                    Need a quiet space to talk things through?
+                  </h3>
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
+                    Aapun AI is here to listen — whenever you need.
+                  </p>
+                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white"
+                    style={{ backgroundColor: c.sage }}>
+                    Talk with Aapun AI
+                  </span>
+                </Link>
+
+                {/* Notes card */}
+                <Link href="/notes"
+                  className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: c.card, borderColor: c.border }}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
+                    style={{ backgroundColor: c.sageLight }}>
+                    <span style={{ color: c.sage }}>✏️</span>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+                    Notes for the day
+                  </h3>
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
+                    A private space for your thoughts. Only you can see these.
+                  </p>
+                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
+                    style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                    Write a note
+                  </span>
+                </Link>
+              </div>
+            </div>
 
             {/* Today's resources */}
             {resources.length > 0 && (
@@ -382,14 +384,14 @@ export default function DashboardPage() {
             )}
 
             <p className="text-xs italic text-center pt-4" style={{ color: c.inkMuted }}>
-            This is your quiet place. Come back anytime ♡
+              This is your quiet place. Come back anytime. 
             </p>
 
           </div>
         )}
       </main>
     </div>
-  )
+  );
 }
 
 function AapunMark({ size = 40 }: { size?: number }) {
