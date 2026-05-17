@@ -176,10 +176,14 @@ export default function Home() {
             <strong style={{ color: c.ink }}>Aapun is not therapy, counseling, or mental health treatment.</strong>{" "}
             Peers here are not clinicians and cannot give medical or professional advice.
           </p>
-          <p className="leading-relaxed" style={{ color: c.inkSoft }}>
-            <strong style={{ color: c.ink }}>Aapun is not a crisis or emergency service.</strong>{" "}
-            If you or someone else is in immediate danger, please contact local emergency services or a crisis helpline in your area.
-          </p>
+          <<p className="leading-relaxed" style={{ color: c.inkSoft }}>
+  <strong style={{ color: c.ink }}>Aapun is not a crisis or emergency service.</strong>{" "}
+  If you or someone else is in immediate danger, please contact local emergency services or a crisis helpline in your area.
+</p>
+<p className="mt-3 leading-relaxed" style={{ color: c.inkSoft }}>
+  <strong style={{ color: c.ink }}>Your conversations are private.</strong>{" "}
+  Messages are only visible to you and your match, and are automatically deleted after 3 days.
+</p>
         </div>
       </section>
 

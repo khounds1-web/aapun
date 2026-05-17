@@ -50,10 +50,8 @@ function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size
   }
 
   return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full text-white font-medium"
-      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.35 }}
-    >
+    <div className="flex shrink-0 items-center justify-center rounded-full text-white font-medium"
+      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.35 }}>
       {initials}
     </div>
   );
@@ -83,7 +81,6 @@ export default function ChatPage() {
     if (!isLoaded) return;
     if (!user) { router.push("/"); return; }
 
-    // Get current user's name and match info
     supabase
       .from("profiles")
       .select("full_name, matched_with, match_id")
@@ -91,12 +88,9 @@ export default function ChatPage() {
       .eq("match_id", matchId)
       .limit(1)
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          setSenderName(data[0].full_name);
-        }
+        if (data && data.length > 0) setSenderName(data[0].full_name);
       });
 
-    // Get the other person's info for notifications
     supabase
       .from("profiles")
       .select("user_id, full_name")
@@ -105,14 +99,10 @@ export default function ChatPage() {
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setMatchInfo({
-            recipient_user_id: data[0].user_id,
-            recipient_name: data[0].full_name,
-          });
+          setMatchInfo({ recipient_user_id: data[0].user_id, recipient_name: data[0].full_name });
         }
       });
 
-    // Load existing messages
     supabase
       .from("messages")
       .select("*")
@@ -120,7 +110,6 @@ export default function ChatPage() {
       .order("created_at", { ascending: true })
       .then(({ data }) => { setMessages(data || []); });
 
-    // Subscribe to real-time messages
     const channel = supabase
       .channel(`chat:${matchId}`)
       .on("postgres_changes", {
@@ -165,14 +154,8 @@ export default function ChatPage() {
       content: newMessage.trim(),
     });
 
-    // Notify the recipient
     if (matchInfo) {
-      await notifyMessage(
-        matchInfo.recipient_user_id,
-        matchInfo.recipient_name,
-        senderName || "Your match",
-        matchId
-      );
+      await notifyMessage(matchInfo.recipient_user_id, matchInfo.recipient_name, senderName || "Your match", matchId);
     }
 
     setNewMessage("");
@@ -181,10 +164,9 @@ export default function ChatPage() {
 
   return (
     <div className="flex min-h-full flex-col font-sans" style={{ backgroundColor: c.bg }}>
-      <header
-        className="flex shrink-0 items-center gap-4 border-b px-6 py-4"
-        style={{ backgroundColor: c.card, borderColor: c.border }}
-      >
+      {/* Header */}
+      <header className="flex shrink-0 items-center gap-4 border-b px-6 py-4"
+        style={{ backgroundColor: c.card, borderColor: c.border }}>
         <Link href="/dashboard" className="text-sm font-medium transition-opacity hover:opacity-70" style={{ color: c.inkMuted }}>
           ← Back
         </Link>
@@ -194,6 +176,12 @@ export default function ChatPage() {
         </div>
       </header>
 
+      {/* Privacy notice */}
+      <div className="px-6 py-2 text-center text-xs" style={{ backgroundColor: c.sageLight, color: c.inkMuted }}>
+        🔒 This conversation is private and only visible to you and your match. Messages are automatically deleted after 3 days.
+      </div>
+
+      {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
           {messages.length === 0 && (
@@ -224,6 +212,7 @@ export default function ChatPage() {
         </div>
       </main>
 
+      {/* Input */}
       <footer className="shrink-0 border-t px-6 py-4" style={{ backgroundColor: c.card, borderColor: c.border }}>
         <div className="mx-auto w-full max-w-2xl">
           {showEmojiPicker && (
@@ -244,12 +233,9 @@ export default function ChatPage() {
               className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
               style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink }}
             />
-            <button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || sending}
+            <button onClick={sendMessage} disabled={!newMessage.trim() || sending}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-[#2f584b] disabled:opacity-40"
-              style={{ backgroundColor: c.sage }}
-            >
+              style={{ backgroundColor: c.sage }}>
               ↑
             </button>
           </div>
