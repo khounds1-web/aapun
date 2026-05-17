@@ -148,7 +148,7 @@ export default function DashboardPage() {
       if (matchIds.length > 0) {
         const { data: unread } = await supabase
           .from("messages")
-          .select(match_id)
+          .select("match_id")
           .in(match_id, matchIds)
           .neq(sender_id, user.id)
           .eq(read, false);
