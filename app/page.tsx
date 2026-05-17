@@ -65,8 +65,7 @@ export default function Home() {
               The trusted friend you never knew you had.
             </p>
             <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
-              Aapun is a quiet space for meaningful one-on-one conversations with people who share similar lived experiences.
-            </p>
+            Conversations beyond your everyday circle, grounded in shared experience.            </p>
 
             <div className="mb-10 grid grid-cols-3 gap-4">
               {[
