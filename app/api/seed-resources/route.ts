@@ -60,7 +60,7 @@ export async function GET() {
 
 Rules:
 - Real, existing resources with working websites
-- Mix of podcasts and books (at least 1 of each)
+- Podcasts only — no books
 - Free to access or widely available
 - Do NOT include: ${existingTitles.join(", ")}
 - Link to podcast website (not Spotify) or Goodreads for books
