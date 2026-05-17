@@ -49,9 +49,9 @@ type GroupedCategory = {
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Hope you slept okay,";
-  if (hour < 17) return "Hope your day is treating you well,";
-  return "Hope today was a good one,";
+  if (hour < 12) return "Good morning,";
+  if (hour < 17) return "Good afternoon,";
+  return "Good evening,";
 }
 
 function getGreetingEmoji() {
@@ -107,6 +107,7 @@ export default function DashboardPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [resource, setResource] = useState<Resource | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,6 +137,28 @@ export default function DashboardPage() {
     );
     if (allCategories.length > 0) {
       await loadDailyResource(user.id, allCategories);
+    }
+
+    // Fetch unread message counts per match
+    if (user && topicsData.length > 0) {
+      const matchIds = topicsData
+        .filter((t: Topic) => t.match_id)
+        .map((t: Topic) => t.match_id);
+
+      if (matchIds.length > 0) {
+        const { data: unread } = await supabase
+          .from(messages)
+          .select(match_id)
+          .in(match_id, matchIds)
+          .neq(sender_id, user.id)
+          .eq(read, false);
+
+        const counts: Record<string, number> = {};
+        (unread || []).forEach((m: { match_id: string }) => {
+          counts[m.match_id] = (counts[m.match_id] || 0) + 1;
+        });
+        setUnreadCounts(counts);
+      }
     }
   }
 
@@ -218,9 +241,12 @@ export default function DashboardPage() {
           <p className="text-base mb-1" style={{ color: c.inkMuted }}>
             {getGreetingEmoji()}
           </p>
-          <h1 className="text-xl sm:text-3xl font-medium leading-snug mb-4" style={{ color: c.ink }}>
-  {getGreeting()} {firstName}
-</h1>
+          <h1 className="text-4xl sm:text-5xl font-semibold leading-tight mb-4" style={{ color: c.ink }}>
+            {getGreeting()}<br />{firstName}
+          </h1>
+          <p className="text-base leading-relaxed" style={{ color: c.inkMuted }}>
+            You're showing up for yourself.<br />We're glad you're here.
+          </p>
         </div>
 
         {loading ? (
