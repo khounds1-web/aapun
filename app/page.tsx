@@ -176,7 +176,7 @@ export default function Home() {
             <strong style={{ color: c.ink }}>Aapun is not therapy, counseling, or mental health treatment.</strong>{" "}
             Peers here are not clinicians and cannot give medical or professional advice.
           </p>
-          <<p className="leading-relaxed" style={{ color: c.inkSoft }}>
+          <p className="leading-relaxed" style={{ color: c.inkSoft }}>
   <strong style={{ color: c.ink }}>Aapun is not a crisis or emergency service.</strong>{" "}
   If you or someone else is in immediate danger, please contact local emergency services or a crisis helpline in your area.
 </p>
@@ -213,7 +213,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t px-8 py-8 text-center text-sm" style={{ borderColor: c.border, color: c.inkMuted }}>
-        © 2025 Aapun. Safe. Private. Human.
+        © 2026 Aapun. Safe. Private. Human.
       </footer>
 
     </div>
