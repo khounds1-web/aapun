@@ -167,7 +167,7 @@ export default function DashboardPage() {
         {/* Greeting */}
         <div className="pt-16 pb-12">
           <p className="text-2xl mb-2" style={{ color: c.inkMuted }}>{getGreetingEmoji()}</p>
-          <h1 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4" style={{ color: c.inkSoft }}>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4" style={{ color: c.inkSoft }}>
             {getGreeting()}, {firstName}
           </h1>
           <p className="text-base" style={{ color: c.inkMuted }}>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                  Thoughtfully chosen
+                  Thoughtfully chosen for you
                 </h2>
                 <Link href="/resources" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
                   See all
