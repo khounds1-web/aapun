@@ -115,6 +115,7 @@ export default function DashboardPage() {
     { id: "topics", label: "Topics", icon: TopicsIcon, href: "/get-started" },
     { id: "conversations", label: "Chats", icon: ChatIcon },
     { id: "matches", label: "Matches", icon: MatchIcon },
+    { id: "resources", label: "Resources", icon: ResourcesIcon, href: "/resources" },
     { id: "profile", label: "Profile", icon: ProfileIcon },
   ];
 
@@ -286,9 +287,9 @@ export default function DashboardPage() {
               </section>
 
               <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl p-5 border" style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full text-lg"
-                    style={{ backgroundColor: "rgba(201,122,82,0.2)" }}>✦</div>
+                    style={{ backgroundColor: "rgba(107,91,158,0.15)" }}>✦</div>
                   <h3 className="mb-1 font-semibold text-sm" style={{ color: c.ink }}>Chat with Aapun AI</h3>
                   <p className="mb-3 text-xs leading-relaxed" style={{ color: c.inkSoft }}>
                     Get support and a listening ear — anytime.
@@ -296,13 +297,13 @@ export default function DashboardPage() {
                   {topics.length > 0 ? (
                     <Link href={`/ai-chat/${topics[0].id}`}
                       className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white"
-                      style={{ backgroundColor: c.apricot }}>
+                      style={{ backgroundColor: c.sage }}>
                       Start chatting
                     </Link>
                   ) : (
                     <Link href="/get-started"
                       className="inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium text-white"
-                      style={{ backgroundColor: c.apricot }}>
+                      style={{ backgroundColor: c.sage }}>
                       Add a topic first
                     </Link>
                   )}
@@ -347,6 +348,14 @@ function MatchIcon({ size = 20 }: { size?: number }) {
 }
 function ProfileIcon({ size = 20 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+}
+function ResourcesIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </svg>
+  );
 }
 function AapunMarkLight({ size = 40 }: { size?: number }) {
   return (
