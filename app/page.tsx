@@ -64,9 +64,6 @@ export default function Home() {
       <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[85vh]">
         <div className="flex flex-col justify-center px-8 py-16 sm:px-12 lg:px-16">
           <div className="max-w-lg">
-            <p className="mb-4 text-sm font-medium tracking-widest uppercase" style={{ color: c.apricot }}>
-              For parents, by parents
-            </p>
             <h1 className="mb-3 text-5xl font-semibold leading-tight tracking-tight sm:text-6xl" style={{ color: c.ink }}>
               Talk to someone who{" "}
               <span className="italic" style={{ color: c.sage }}>truly</span>{" "}
@@ -76,13 +73,13 @@ export default function Home() {
               The trusted friend you never knew you had.
             </p>
             <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
-              Aapun is a quiet space for meaningful conversations with parents who share similar lived experiences.
+              Aapun is a quiet space for meaningful one-on-one conversations with people who share similar lived experiences.
             </p>
 
             <div className="mb-10 grid grid-cols-3 gap-4">
               {[
                 { icon: "♡", title: "Real conversations", sub: "No advice unless asked." },
-                { icon: "⌂", title: "People who get it", sub: "Parents like you." },
+                { icon: "⌂", title: "People who get it", sub: "People like you." },
                 { icon: "🔒", title: "Private & respectful", sub: "Your story stays yours." },
               ].map((f) => (
                 <div key={f.title}>
@@ -117,7 +114,7 @@ export default function Home() {
         </div>
 
         <div className="relative hidden lg:block">
-          <Image src="/mugs.png" alt="Two mugs — a conversation between two parents" fill className="object-cover" priority />
+          <Image src="/mugs.png" alt="A conversation between two people" fill className="object-cover" priority />
         </div>
       </section>
 
@@ -143,7 +140,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
             {[
               { step: "1", title: "Share your experience", desc: "Tell us what you're navigating — no pressure, no judgment." },
-              { step: "2", title: "We find your match", desc: "We connect you with a parent who truly understands your situation." },
+              { step: "2", title: "We find your match", desc: "We connect you with someone who truly understands your situation." },
               { step: "3", title: "Have a real conversation", desc: "Connect one-on-one, at your own pace, on your terms." },
             ].map((s) => (
               <div key={s.step} className="rounded-2xl p-6"
