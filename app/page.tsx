@@ -50,12 +50,7 @@ export default function Home() {
                 Sign in
               </button>
             </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
-                style={{ backgroundColor: c.sage }}>
-                Get Started
-              </button>
-            </SignUpButton>
+        
           </div>
         </div>
       </nav>
