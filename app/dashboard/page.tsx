@@ -89,16 +89,14 @@ export default function DashboardPage() {
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
 
-  // Group topics by their first category
   const groupedCategories: GroupedCategory[] = [];
   const seen = new Map<string, GroupedCategory>();
 
   topics.forEach((topic) => {
-    const cats = topic.experience_categories;
-    const key = cats.join(",");
+    const key = topic.experience_categories.join(",");
     if (!seen.has(key)) {
       const group: GroupedCategory = {
-        category: cats[0] || "General",
+        category: topic.experience_categories[0] || "General",
         topics: [],
         matches: [],
         unmatched: [],
@@ -108,17 +106,14 @@ export default function DashboardPage() {
     }
     const group = seen.get(key)!;
     group.topics.push(topic);
-    if (topic.matched_with) {
-      group.matches.push(topic);
-    } else {
-      group.unmatched.push(topic);
-    }
+    if (topic.matched_with) group.matches.push(topic);
+    else group.unmatched.push(topic);
   });
 
   const navItems = [
     { id: "home", label: "Home", icon: HomeIcon },
     { id: "topics", label: "Topics", icon: TopicsIcon, href: "/get-started" },
-    { id: "conversations", label: "Conversations", icon: ChatIcon },
+    { id: "conversations", label: "Chats", icon: ChatIcon },
     { id: "matches", label: "Matches", icon: MatchIcon },
     { id: "profile", label: "Profile", icon: ProfileIcon },
   ];
@@ -126,14 +121,13 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-full font-sans" style={{ backgroundColor: c.bg }}>
 
-      {/* Sidebar */}
+      {/* Sidebar — desktop only */}
       <aside className="hidden lg:flex w-60 flex-col fixed inset-y-0 left-0 z-10"
         style={{ backgroundColor: c.sidebar }}>
         <div className="flex items-center gap-3 px-6 py-6">
           <AapunMarkLight size={32} />
           <span className="text-lg font-semibold text-white">Aapun</span>
         </div>
-
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -149,7 +143,6 @@ export default function DashboardPage() {
             );
           })}
         </nav>
-
         <div className="mx-3 mb-4 rounded-2xl overflow-hidden relative" style={{ height: 160 }}>
           <Image src="/mugs.png" alt="Aapun" fill className="object-cover opacity-60" />
           <div className="absolute inset-0 p-4 flex flex-col justify-end"
@@ -161,37 +154,60 @@ export default function DashboardPage() {
 
       {/* Main */}
       <div className="flex-1 lg:ml-60 flex flex-col min-h-full">
-        <header className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b"
+
+        {/* Top bar */}
+        <header className="sticky top-0 z-10 border-b px-4 py-3 sm:px-8 sm:py-4"
           style={{ backgroundColor: c.bg, borderColor: c.border }}>
-          <div>
-            <h1 className="text-xl font-semibold" style={{ color: c.ink }}>
-              {getGreeting()}, {firstName} {getGreetingEmoji()}
-            </h1>
-            <p className="text-sm" style={{ color: c.inkMuted }}>
-              You're showing up for yourself and your story. We're glad you're here.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/get-started"
-              className="inline-flex h-10 items-center gap-2 justify-center rounded-full px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
-              style={{ backgroundColor: c.sage }}>
-              + Add topic
-            </Link>
-            <UserButton />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold sm:text-xl leading-tight" style={{ color: c.ink }}>
+                {getGreeting()}, {firstName} {getGreetingEmoji()}
+              </h1>
+              <p className="text-xs sm:text-sm mt-0.5" style={{ color: c.inkMuted }}>
+                You're showing up for yourself. We're glad you're here.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/get-started"
+                className="inline-flex h-9 items-center gap-1 justify-center rounded-full px-4 text-sm font-medium text-white transition-colors hover:bg-[#2f584b]"
+                style={{ backgroundColor: c.sage }}>
+                + Add
+              </Link>
+              <UserButton />
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 px-8 py-8">
+        {/* Mobile bottom nav */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around border-t py-2 px-4"
+          style={{ backgroundColor: c.bg, borderColor: c.border }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.id;
+            return (
+              <button key={item.id}
+                onClick={() => { setActiveNav(item.id); if (item.href) router.push(item.href); }}
+                className="flex flex-col items-center gap-0.5 px-3 py-1"
+                style={{ color: isActive ? c.sage : c.inkMuted }}>
+                <Icon size={20} />
+                <span className="text-xs">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Content */}
+        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 pb-24 lg:pb-8">
           {loading ? (
             <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
           ) : (
-            <div className="max-w-4xl space-y-8">
+            <div className="max-w-4xl space-y-6">
 
-              {/* Topics table */}
+              {/* Topics */}
               <section>
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold" style={{ color: c.ink }}>Your topics</h2>
-                  <p className="text-sm" style={{ color: c.inkMuted }}>Each topic is looking for a peer who gets it.</p>
+                  <h2 className="text-base font-semibold sm:text-lg" style={{ color: c.ink }}>Your topics</h2>
+                  <p className="text-xs sm:text-sm" style={{ color: c.inkMuted }}>Each topic is looking for a peer who gets it.</p>
                 </div>
 
                 {groupedCategories.length === 0 ? (
@@ -206,21 +222,13 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                    <div className="grid grid-cols-3 px-6 py-3 border-b text-xs font-medium uppercase tracking-wider"
-                      style={{ borderColor: c.border, color: c.inkMuted, backgroundColor: "#faf8f5" }}>
-                      <span>Category</span>
-                      <span>Status</span>
-                      <span>Action</span>
-                    </div>
-
+                  <div className="space-y-3">
                     {groupedCategories.map((group, i) => (
-                      <div key={i}
-                        className={`grid grid-cols-3 items-center px-6 py-4 ${i < groupedCategories.length - 1 ? "border-b" : ""}`}
-                        style={{ borderColor: c.border }}>
+                      <div key={i} className="rounded-2xl border p-4 sm:p-5"
+                        style={{ backgroundColor: c.card, borderColor: c.border }}>
 
-                        {/* Category tags */}
-                        <div className="flex flex-wrap gap-1.5">
+                        {/* Categories */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
                           {group.topics[0].experience_categories.map((cat) => (
                             <span key={cat} className="rounded-full px-2.5 py-1 text-xs font-medium"
                               style={{ backgroundColor: c.sageLight, color: c.sage }}>
@@ -230,34 +238,34 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Status */}
-                        <div>
+                        <div className="mb-3">
                           {group.matches.length > 0 ? (
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: c.sage }}>
-                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.sage }} />
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: c.sage }} />
                               {group.matches.length === 1
                                 ? `Matched with ${group.matches[0].matched_with}`
                                 : `${group.matches.length} matches`}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: c.inkMuted }}>
-                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.apricot }} />
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
                               Looking for a match
                             </span>
                           )}
                         </div>
 
-                        {/* Action */}
-                        <div className="flex items-center gap-2">
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2">
                           {group.matches.length === 1 && group.matches[0].match_id ? (
                             <>
                               <Link
                                 href={`/matches/${encodeURIComponent(group.category)}?matchId=${group.matches[0].match_id}`}
-                                className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                                className="rounded-full px-4 py-2 text-xs font-medium transition-colors"
                                 style={{ backgroundColor: c.sageLight, color: c.sage }}>
                                 See match →
                               </Link>
                               <Link href={`/chat/${group.matches[0].match_id}`}
-                                className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#2f584b]"
+                                className="rounded-full px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#2f584b]"
                                 style={{ backgroundColor: c.sage }}>
                                 Chat
                               </Link>
@@ -265,13 +273,13 @@ export default function DashboardPage() {
                           ) : group.matches.length > 1 ? (
                             <Link
                               href={`/matches/${encodeURIComponent(group.category)}?ids=${group.matches.map(m => m.match_id).join(",")}`}
-                              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                              className="rounded-full px-4 py-2 text-xs font-medium transition-colors"
                               style={{ backgroundColor: c.sageLight, color: c.sage }}>
                               See all matches →
                             </Link>
                           ) : (
                             <Link href={`/ai-chat/${group.topics[0].id}`}
-                              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                              className="rounded-full px-4 py-2 text-xs font-medium transition-colors"
                               style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
                               Chat with AI
                             </Link>
@@ -285,12 +293,12 @@ export default function DashboardPage() {
 
               {/* Bottom cards */}
               <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: c.apricotLight, borderColor: `${c.apricot}33` }}>
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full text-lg"
                     style={{ backgroundColor: "rgba(201,122,82,0.2)" }}>✦</div>
-                  <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Chat with Aapun AI</h3>
-                  <p className="mb-4 text-sm leading-relaxed" style={{ color: c.inkSoft }}>
-                    Get support, clarity, and a listening ear — anytime you need it.
+                  <h3 className="mb-1 font-semibold text-sm" style={{ color: c.ink }}>Chat with Aapun AI</h3>
+                  <p className="mb-3 text-xs leading-relaxed" style={{ color: c.inkSoft }}>
+                    Get support and a listening ear — anytime.
                   </p>
                   {topics.length > 0 ? (
                     <Link href={`/ai-chat/${topics[0].id}`}
@@ -307,19 +315,19 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <div className="rounded-2xl p-6 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full text-xl"
+                <div className="rounded-2xl p-5 border" style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full text-lg"
                     style={{ backgroundColor: "rgba(58,107,92,0.15)" }}>🔒</div>
-                  <h3 className="mb-1 font-semibold" style={{ color: c.ink }}>Your privacy matters</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: c.inkSoft }}>
-                    All conversations are private and only visible to you and your match. Messages are automatically deleted after 3 days.
+                  <h3 className="mb-1 font-semibold text-sm" style={{ color: c.ink }}>Your privacy matters</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: c.inkSoft }}>
+                    Conversations are private and deleted after 3 days.
                   </p>
                 </div>
               </section>
 
-              <div className="flex items-center gap-3 py-4">
+              <div className="flex items-center gap-3 py-2">
                 <span style={{ color: c.apricot }}>♡</span>
-                <p className="text-sm italic" style={{ color: c.inkMuted }}>
+                <p className="text-xs italic" style={{ color: c.inkMuted }}>
                   You don't have to go through it alone. We're here, together.
                 </p>
               </div>
@@ -335,21 +343,17 @@ export default function DashboardPage() {
 function HomeIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   );
 }
-
 function TopicsIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+      <circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
     </svg>
   );
 }
-
 function ChatIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -357,27 +361,20 @@ function ChatIcon({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-
 function MatchIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
-
 function ProfileIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   );
 }
-
 function AapunMarkLight({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
