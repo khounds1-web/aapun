@@ -37,6 +37,11 @@ type MatchInfo = {
   recipient_name: string;
 };
 
+type ProfileInfo = {
+  experience_categories: string[];
+  description: string;
+};
+
 function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const colors = ["#3a6b5c", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b", "#6b5c3a", "#3a3a6b", "#6b3a3a"];
@@ -68,6 +73,8 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [senderName, setSenderName] = useState("");
   const [matchInfo, setMatchInfo] = useState<MatchInfo | null>(null);
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
@@ -81,28 +88,40 @@ export default function ChatPage() {
     if (!isLoaded) return;
     if (!user) { router.push("/"); return; }
 
+    // Get current user's profile
+    let myProfile: ProfileInfo | null = null;
+    let theirProfile: ProfileInfo | null = null;
+
     supabase
       .from("profiles")
-      .select("full_name, matched_with, match_id")
+      .select("full_name, experience_categories, description")
       .eq("user_id", user.id)
       .eq("match_id", matchId)
       .limit(1)
       .then(({ data }) => {
-        if (data && data.length > 0) setSenderName(data[0].full_name);
+        if (data && data.length > 0) {
+          setSenderName(data[0].full_name);
+          myProfile = { experience_categories: data[0].experience_categories, description: data[0].description };
+          if (theirProfile) generatePrompts(myProfile, theirProfile);
+        }
       });
 
+    // Get the other person's profile
     supabase
       .from("profiles")
-      .select("user_id, full_name")
+      .select("user_id, full_name, experience_categories, description")
       .eq("match_id", matchId)
       .neq("user_id", user.id)
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
           setMatchInfo({ recipient_user_id: data[0].user_id, recipient_name: data[0].full_name });
+          theirProfile = { experience_categories: data[0].experience_categories, description: data[0].description };
+          if (myProfile) generatePrompts(myProfile, theirProfile);
         }
       });
 
+    // Load messages
     supabase
       .from("messages")
       .select("*")
@@ -110,6 +129,7 @@ export default function ChatPage() {
       .order("created_at", { ascending: true })
       .then(({ data }) => { setMessages(data || []); });
 
+    // Real-time subscription
     const channel = supabase
       .channel(`chat:${matchId}`)
       .on("postgres_changes", {
@@ -122,6 +142,26 @@ export default function ChatPage() {
 
     return () => { supabase.removeChannel(channel); };
   }, [isLoaded, user, matchId]);
+
+  async function generatePrompts(myProfile: ProfileInfo, theirProfile: ProfileInfo) {
+    try {
+      const res = await fetch("/api/chat-prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoriesA: myProfile.experience_categories,
+          descriptionA: myProfile.description,
+          categoriesB: theirProfile.experience_categories,
+          descriptionB: theirProfile.description,
+        }),
+      });
+      const data = await res.json();
+      if (data.prompts) setPrompts(data.prompts);
+    } catch (err) {
+      console.error("Prompts error:", err);
+    }
+    setLoadingPrompts(false);
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -142,8 +182,9 @@ export default function ChatPage() {
     setShowEmojiPicker(false);
   }
 
-  async function sendMessage() {
-    if (!newMessage.trim() || !user || sending) return;
+  async function sendMessage(content?: string) {
+    const messageToSend = content || newMessage.trim();
+    if (!messageToSend || !user || sending) return;
     setSending(true);
 
     await supabase.from("messages").insert({
@@ -151,7 +192,7 @@ export default function ChatPage() {
       sender_id: user.id,
       sender_name: senderName || "You",
       sender_photo: user.imageUrl || null,
-      content: newMessage.trim(),
+      content: messageToSend,
     });
 
     if (matchInfo) {
@@ -178,17 +219,40 @@ export default function ChatPage() {
 
       {/* Privacy notice */}
       <div className="px-6 py-2 text-center text-xs" style={{ backgroundColor: c.sageLight, color: c.inkMuted }}>
-        🔒 This conversation is private and only visible to you and your match. Messages are automatically deleted after 3 days.
+        🔒 Private conversation — messages are automatically deleted after 3 days.
       </div>
 
       {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
-          {messages.length === 0 && (
-            <p className="py-8 text-center text-sm" style={{ color: c.inkMuted }}>
-              Say hi — your match will see it when they log in. 👋
+
+          {/* Prompts — only show when no messages yet */}
+          {messages.length === 0 && !loadingPrompts && prompts.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-3 text-center text-xs font-medium" style={{ color: c.inkMuted }}>
+                Not sure how to start? Try one of these:
+              </p>
+              <div className="flex flex-col gap-2">
+                {prompts.map((prompt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(prompt)}
+                    className="rounded-2xl px-4 py-3 text-sm text-left transition-colors hover:opacity-80"
+                    style={{ backgroundColor: c.sageLight, color: c.sage, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.length === 0 && loadingPrompts && (
+            <p className="py-4 text-center text-xs" style={{ color: c.inkMuted }}>
+              Preparing conversation starters…
             </p>
           )}
+
           {messages.map((msg) => {
             const isMe = msg.sender_id === user?.id;
             return (
@@ -233,7 +297,7 @@ export default function ChatPage() {
               className="flex-1 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
               style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink }}
             />
-            <button onClick={sendMessage} disabled={!newMessage.trim() || sending}
+            <button onClick={() => sendMessage()} disabled={!newMessage.trim() || sending}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-[#2f584b] disabled:opacity-40"
               style={{ backgroundColor: c.sage }}>
               ↑
