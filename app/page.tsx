@@ -173,8 +173,7 @@ export default function Home() {
       {/* Safety */}
       <section className="px-8 py-16 sm:px-12" id="safety">
         <div className="mx-auto max-w-2xl rounded-2xl p-8 sm:p-10"
-          style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }}>
-          <h2 className="mb-4 text-xl font-semibold" style={{ color: c.ink }}>A gentle but important note</h2>
+style={{ backgroundColor: "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}          <h2 className="mb-4 text-xl font-semibold" style={{ color: c.ink }}>A gentle but important note</h2>
           <p className="mb-3 leading-relaxed" style={{ color: c.inkSoft }}>
             <strong style={{ color: c.ink }}>Aapun is not therapy, counseling, or mental health treatment.</strong>{" "}
             Peers here are not clinicians and cannot give medical or professional advice.
