@@ -221,7 +221,6 @@ export default function DashboardPage() {
           <h1 className="text-4xl sm:text-5xl font-semibold leading-tight mb-4" style={{ color: c.ink }}>
             {getGreeting()}<br />{firstName}
           </h1>
-               </p>
         </div>
 
         {loading ? (
