@@ -73,8 +73,9 @@ export async function saveProfile(data: {
   return { success: true };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function autoMatch(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   newProfile: { id: string; user_id: string },
   newUserName: string,
   newUserEmail: string,
