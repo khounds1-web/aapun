@@ -16,7 +16,7 @@ const c = {
   apricot: "#c97a52",
   apricotLight: "#f3e4db",
   card: "rgba(255, 255, 255, 0.85)",
-  border: "#ddd6f0",
+  border: "#ede8f8",
 } as const;
 
 export default function Home() {
@@ -107,26 +107,18 @@ export default function Home() {
 
         {/* Hero image with gradient blend */}
         <div className="relative hidden lg:block overflow-hidden">
-  <Image
-    src="/mugs.png"
-    alt="A conversation between two people"
-    fill
-    className="object-cover"
-    priority
-  />
-  <div className="absolute inset-0" style={{
-    background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}99 10%, ${c.bg}44 30%, transparent 55%)`
-  }} />
-  <div className="absolute inset-0" style={{
-    background: `linear-gradient(to bottom, ${c.bg}88 0%, transparent 20%, transparent 80%, ${c.bg}88 100%)`
-  }} />
-          {/* Left fade blend */}
+          <Image
+            src="/mugs.png"
+            alt="A conversation between two people"
+            fill
+            className="object-cover"
+            priority
+          />
           <div className="absolute inset-0" style={{
-            background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}88 15%, transparent 40%)`
+            background: `linear-gradient(to right, ${c.bg} 0%, ${c.bg}99 10%, ${c.bg}44 30%, transparent 55%)`
           }} />
-          {/* Top fade */}
           <div className="absolute inset-0" style={{
-            background: `linear-gradient(to bottom, ${c.bg} 0%, transparent 15%)`
+            background: `linear-gradient(to bottom, ${c.bg}88 0%, transparent 20%, transparent 80%, ${c.bg}88 100%)`
           }} />
         </div>
       </section>
@@ -173,7 +165,8 @@ export default function Home() {
       {/* Safety */}
       <section className="px-8 py-16 sm:px-12" id="safety">
         <div className="mx-auto max-w-2xl rounded-2xl p-8 sm:p-10"
-style={{ backgroundColor: "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}          <h2 className="mb-4 text-xl font-semibold" style={{ color: c.ink }}>A gentle but important note</h2>
+          style={{ backgroundColor: "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+          <h2 className="mb-4 text-xl font-semibold" style={{ color: c.ink }}>A gentle but important note</h2>
           <p className="mb-3 leading-relaxed" style={{ color: c.inkSoft }}>
             <strong style={{ color: c.ink }}>Aapun is not therapy, counseling, or mental health treatment.</strong>{" "}
             Peers here are not clinicians and cannot give medical or professional advice.
