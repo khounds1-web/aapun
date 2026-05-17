@@ -51,6 +51,35 @@ function getGreetingEmoji() {
   return "🌙";
 }
 
+function CategoryIcon({ category }: { category: string }) {
+  const icons: Record<string, string> = {
+    "Balancing careers and parenting": "💼",
+    "First-time parents": "🌱",
+    "Postpartum depression/anxiety": "♡",
+    "NICU parents": "🕊️",
+    "IVF": "✨",
+    "Immigrant parents": "🌍",
+    "Single parents": "⭐",
+    "Breastfeeding/Pumping/Formula feeding": "✦",
+    "Planning to conceive soon": "🌸",
+    "Co-parenting after divorce": "🤝",
+    "Stay-at-home moms/dads": "🏡",
+    "Parents of neurodivergent children": "🧡",
+    "Parents of autistic children": "🧡",
+    "Pregnancy loss & miscarriage": "🕊️",
+    "Parenting with a partner who doesn't share the load": "⚖️",
+    "Hiring a nanny/caregiver": "🏠",
+    "Other": "💬",
+  };
+  const icon = icons[category] || "💬";
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base"
+      style={{ backgroundColor: c.sageLight }}>
+      {icon}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -102,9 +131,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
 
-      {/* Nav — light, minimal */}
+      {/* Nav */}
       <header className="border-b px-8 sm:px-16" style={{ borderColor: c.border, backgroundColor: c.bg }}>
-        <div className="mx-auto max-w-2xl flex items-center justify-between h-16">
+        <div className="mx-auto max-w-5xl flex items-center justify-between h-16">
           <div className="flex items-center gap-2.5">
             <AapunMark size={26} />
             <span className="text-sm font-semibold tracking-tight" style={{ color: c.ink }}>Aapun</span>
@@ -117,13 +146,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Content — narrow, centered, generous padding */}
-      <main className="mx-auto max-w-2xl px-8 sm:px-16">
+      <main className="mx-auto max-w-5xl px-8 sm:px-16">
 
-        {/* Greeting — large, spacious */}
+        {/* Greeting */}
         <div className="pt-16 pb-12">
-          <p className="text-sm mb-3" style={{ color: c.inkMuted }}>{getGreetingEmoji()}</p>
-          <h1 className="text-4xl font-semibold tracking-tight mb-3" style={{ color: c.ink }}>
+          <p className="text-2xl mb-2" style={{ color: c.inkMuted }}>{getGreetingEmoji()}</p>
+          <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight mb-4" style={{ color: c.ink }}>
             {getGreeting()},<br />{firstName}.
           </h1>
           <p className="text-base" style={{ color: c.inkMuted }}>
@@ -134,119 +162,104 @@ export default function DashboardPage() {
         {loading ? (
           <p className="text-sm pb-16" style={{ color: c.inkMuted }}>Loading…</p>
         ) : (
-          <div>
+          <div className="space-y-10 pb-20">
 
-            {/* Your spaces */}
-            <section className="pb-16">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                  Your spaces
-                </h2>
-                <Link href="/get-started" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
-                  + New space
-                </Link>
-              </div>
+            {/* Your spaces + AI card — two column */}
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-              {groupedCategories.length === 0 ? (
-                <div className="py-16 text-center">
-                  <p className="text-base mb-2" style={{ color: c.ink }}>Nothing here yet</p>
-                  <p className="text-sm mb-8" style={{ color: c.inkMuted }}>
-                    Add your first space to begin finding someone who gets it.
-                  </p>
-                  <Link href="/get-started"
-                    className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Begin
+              {/* Topic cards */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your spaces</h2>
+                    <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Where meaningful conversations begin.</p>
+                  </div>
+                  <Link href="/get-started" className="text-xs transition-opacity hover:opacity-60" style={{ color: c.sage }}>
+                    + New space
                   </Link>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {groupedCategories.map((group, i) => (
-                    <div key={i} className="py-6 border-t" style={{ borderColor: c.border }}>
 
-                      {/* Category tags */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {group.topics[0].experience_categories.map((cat) => (
-                          <span key={cat} className="rounded-full px-3 py-1 text-xs"
+                {groupedCategories.length === 0 ? (
+                  <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                    <p className="mb-2 font-medium text-sm" style={{ color: c.ink }}>Nothing here yet</p>
+                    <p className="mb-6 text-xs" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
+                    <Link href="/get-started"
+                      className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
+                      style={{ backgroundColor: c.sage }}>
+                      Begin
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {groupedCategories.map((group, i) => (
+                      <div key={i} className="rounded-2xl border px-5 py-4 flex items-center gap-4"
+                        style={{ backgroundColor: c.card, borderColor: c.border }}>
+
+                        <CategoryIcon category={group.topics[0].experience_categories[0]} />
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm mb-0.5" style={{ color: c.ink }}>
+                            {group.topics[0].experience_categories[0]}
+                          </p>
+                          {group.matches.length > 0 ? (
+                            <p className="text-xs flex items-center gap-1.5" style={{ color: c.inkMuted }}>
+                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.green }} />
+                              You're matched with {group.matches[0].matched_with}
+                            </p>
+                          ) : (
+                            <p className="text-xs flex items-center gap-1.5" style={{ color: c.inkMuted }}>
+                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
+                              We're finding the right match for you
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Action */}
+                        {group.matches.length > 0 && group.matches[0].match_id ? (
+                          <Link href={`/chat/${group.matches[0].match_id}`}
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
                             style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                            {cat}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Status */}
-                      {group.matches.length > 0 ? (
-                        <div>
-                          <p className="text-sm mb-5" style={{ color: c.inkSoft }}>
-                            <span className="inline-block h-1.5 w-1.5 rounded-full mr-2 align-middle" style={{ backgroundColor: c.green }} />
-                            {group.matches.length === 1
-                              ? `Spend time together with ${group.matches[0].matched_with}`
-                              : `${group.matches.length} people to connect with`}
-                          </p>
-                          <div className="flex items-center gap-3">
-                            {group.matches.length === 1 && group.matches[0].match_id ? (
-                              <>
-                                <Link href={`/matches/${encodeURIComponent(group.category)}?matchId=${group.matches[0].match_id}`}
-                                  className="text-xs transition-opacity hover:opacity-60"
-                                  style={{ color: c.inkMuted }}>
-                                  Learn more
-                                </Link>
-                                <Link href={`/chat/${group.matches[0].match_id}`}
-                                  className="inline-flex h-9 items-center justify-center rounded-full px-5 text-xs font-medium text-white"
-                                  style={{ backgroundColor: c.sage }}>
-                                  Say hello
-                                </Link>
-                              </>
-                            ) : (
-                              <Link href={`/matches/${encodeURIComponent(group.category)}?ids=${group.matches.map(m => m.match_id).join(",")}`}
-                                className="inline-flex h-9 items-center justify-center rounded-full px-5 text-xs font-medium text-white"
-                                style={{ backgroundColor: c.sage }}>
-                                See connections
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-sm mb-5" style={{ color: c.inkMuted }}>
-                            <span className="inline-block h-1.5 w-1.5 rounded-full mr-2 align-middle" style={{ backgroundColor: c.apricot }} />
-                            Finding your person — sit tight.
-                          </p>
-                          <Link href={`/ai-chat/${group.topics[0].id}`}
-                            className="text-xs transition-opacity hover:opacity-60"
-                            style={{ color: c.inkMuted }}>
-                            ✦ Reflect with AI in the meantime →
+                            Spend time together <span>›</span>
                           </Link>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div className="border-t" style={{ borderColor: c.border }} />
-                </div>
-              )}
-            </section>
+                        ) : (
+                          <Link href={`/ai-chat/${group.topics[0].id}`}
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
+                            Reflect with AI <span>›</span>
+                          </Link>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            {/* AI reflection — quiet, secondary */}
-            <section className="pb-16">
-              <div className="py-10 px-8 rounded-3xl" style={{ backgroundColor: c.sageLight }}>
-                <p className="text-xs mb-6" style={{ color: c.sage }}>✦</p>
-                <h3 className="text-lg font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
-                  Need a quiet space to<br />talk things through?
-                </h3>
-                <p className="text-sm mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-                  Aapun AI is here to listen — whenever you need.
-                </p>
+              {/* AI card */}
+              <div className="w-full lg:w-72 shrink-0">
                 <Link href={aiHref}
-                  className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
-                  style={{ backgroundColor: c.sage }}>
-                  Talk with Aapun AI →
+                  className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
+                    style={{ backgroundColor: `${c.sage}22` }}>
+                    <span style={{ color: c.sage }}>✦</span>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+                    Need a quiet space to talk things through?
+                  </h3>
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
+                    Aapun AI is here to listen — whenever you need.
+                  </p>
+                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white"
+                    style={{ backgroundColor: c.sage }}>
+                    Talk with Aapun AI →
+                  </span>
                 </Link>
               </div>
-            </section>
+            </div>
 
-            {/* Resources — minimal */}
-            <section className="pb-20">
-              <div className="flex items-center justify-between mb-8">
+            {/* Resources */}
+            <section>
+              <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xs font-medium uppercase tracking-widest" style={{ color: c.inkMuted }}>
                   Thoughtfully chosen
                 </h2>
@@ -254,14 +267,14 @@ export default function DashboardPage() {
                   See all
                 </Link>
               </div>
-              <div className="space-y-6">
+              <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
                 {[
                   { type: "read", title: "Nobody Told Me", subtitle: "About Becoming a Mom — Heather McNamara" },
                   { type: "listen", title: "The Lavender Hour", subtitle: "Ep. 42 · The invisible load no one talks about" },
                   { type: "read", title: "Good Inside", subtitle: "Dr. Becky Kennedy" },
-                ].map((res, i) => (
+                ].map((res, i, arr) => (
                   <Link href="/resources" key={i}
-                    className="flex items-center justify-between py-5 border-t transition-opacity hover:opacity-70"
+                    className={`flex items-center justify-between px-6 py-4 transition-opacity hover:opacity-70 ${i < arr.length - 1 ? "border-b" : ""}`}
                     style={{ borderColor: c.border }}>
                     <div>
                       <p className="text-sm font-medium mb-0.5" style={{ color: c.ink }}>{res.title}</p>
@@ -273,11 +286,10 @@ export default function DashboardPage() {
                     </span>
                   </Link>
                 ))}
-                <div className="border-t" style={{ borderColor: c.border }} />
               </div>
             </section>
 
-            <p className="text-xs italic text-center pb-16" style={{ color: c.inkMuted }}>
+            <p className="text-xs italic text-center pt-4" style={{ color: c.inkMuted }}>
               You don't have to go through it alone. ♡
             </p>
 
