@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -27,32 +28,32 @@ const FEATURED_RESOURCES = [
     title: "Nobody Told Me",
     subtitle: "About Becoming a Mom",
     description: "A gentle read about the real emotions behind early motherhood.",
-    color: "#e8e0f0",
-    emoji: "📗",
+    coverBg: "#e8e2d4",
+    coverText: "Nobody\nTold Me",
   },
   {
     type: "listen",
     title: "The Lavender Hour",
     subtitle: "Ep. 42",
     description: "The invisible load no one talks about.",
-    color: "#e8dff0",
-    emoji: "🎧",
+    coverBg: "#ddd4e8",
+    coverText: "THE\nLAVENDER\nHOUR",
   },
   {
     type: "read",
     title: "Good Inside",
     subtitle: "Dr. Becky Kennedy",
     description: "The parenting manual you always wanted.",
-    color: "#dff0e8",
-    emoji: "📘",
+    coverBg: "#d4e4d8",
+    coverText: "Good\nInside",
   },
   {
     type: "listen",
     title: "Mom and Mind",
     subtitle: "Latest episode",
     description: "Honest conversations about postpartum that no one talks about.",
-    color: "#f0e8df",
-    emoji: "🎙️",
+    coverBg: "#e4d8d4",
+    coverText: "Mom\n&\nMind",
   },
 ];
 
@@ -86,6 +87,17 @@ function getGreetingEmoji() {
   if (hour < 12) return "☀️";
   if (hour < 17) return "🌤️";
   return "🌙";
+}
+
+function BookCover({ bg, text }: { bg: string; text: string }) {
+  return (
+    <div className="shrink-0 rounded-md flex items-center justify-center p-2 text-center"
+      style={{ width: 56, height: 72, backgroundColor: bg }}>
+      <span className="text-xs font-medium leading-tight whitespace-pre-line" style={{ color: c.ink, fontSize: 9 }}>
+        {text}
+      </span>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -125,10 +137,7 @@ export default function DashboardPage() {
   topics.forEach((topic) => {
     const key = topic.experience_categories.join(",");
     if (!seen.has(key)) {
-      const group: GroupedCategory = {
-        category: topic.experience_categories[0] || "General",
-        topics: [], matches: [], unmatched: [],
-      };
+      const group: GroupedCategory = { category: topic.experience_categories[0] || "General", topics: [], matches: [], unmatched: [] };
       seen.set(key, group);
       groupedCategories.push(group);
     }
@@ -152,7 +161,7 @@ export default function DashboardPage() {
       {/* Top nav */}
       <header className="sticky top-0 z-10 border-b px-6 sm:px-10"
         style={{ backgroundColor: c.bg, borderColor: c.border }}>
-        <div className="mx-auto max-w-4xl flex items-center justify-between h-14">
+        <div className="mx-auto max-w-5xl flex items-center justify-between h-14">
           <div className="flex items-center gap-2.5">
             <AapunMark size={28} />
             <span className="text-base font-semibold" style={{ color: c.ink }}>Aapun</span>
@@ -176,7 +185,6 @@ export default function DashboardPage() {
             <UserButton />
           </div>
         </div>
-        {/* Mobile nav */}
         <div className="sm:hidden flex items-center gap-6 pb-3 overflow-x-auto">
           {navLinks.map((item) => (
             <button key={item.id}
@@ -189,141 +197,153 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Content */}
-      <main className="mx-auto max-w-4xl px-6 py-10 sm:px-10">
-
-        {/* Greeting */}
-        <div className="mb-10">
-          <h1 className="text-2xl font-semibold" style={{ color: c.ink }}>
+      {/* Hero greeting with mugs */}
+      <div className="relative overflow-hidden border-b" style={{ borderColor: c.border }}>
+        <div className="mx-auto max-w-5xl px-6 sm:px-10 py-10">
+          <h1 className="text-3xl font-semibold mb-2" style={{ color: c.ink }}>
             {getGreeting()}, {firstName} {getGreetingEmoji()}
           </h1>
-          <p className="mt-1 text-sm" style={{ color: c.inkMuted }}>
-            You're showing up for yourself. We're glad you're here.
+          <p className="text-sm leading-relaxed" style={{ color: c.inkMuted }}>
+            You're showing up for yourself.<br />We're glad you're here.
           </p>
         </div>
+        <div className="absolute right-0 top-0 bottom-0 w-80 hidden sm:block">
+          <Image src="/mugs.png" alt="" fill className="object-cover object-left" priority />
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(to right, ${c.bg} 0%, transparent 35%)`
+          }} />
+        </div>
+      </div>
 
+      {/* Content */}
+      <main className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
         {loading ? (
           <p className="text-sm" style={{ color: c.inkMuted }}>Loading…</p>
         ) : (
           <div className="space-y-8">
 
-            {/* Your spaces */}
-            <section>
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your spaces</h2>
-                  <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Each space is holding a connection for you.</p>
-                </div>
-                <Link href="/get-started" className="text-xs transition-opacity hover:opacity-70" style={{ color: c.sage }}>
-                  + Add space
-                </Link>
-              </div>
-
-              {groupedCategories.length === 0 ? (
-                <div className="rounded-2xl p-10 text-center border"
-                  style={{ backgroundColor: c.card, borderColor: c.border }}>
-                  <p className="mb-1 font-medium text-sm" style={{ color: c.ink }}>Nothing here yet</p>
-                  <p className="mb-5 text-xs" style={{ color: c.inkMuted }}>Add your first space to begin finding someone who gets it.</p>
-                  <Link href="/get-started"
-                    className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Begin
+            {/* Two column — topics + AI card */}
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              <div className="flex-1 min-w-0">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your spaces</h2>
+                    <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>Where meaningful conversations begin.</p>
+                  </div>
+                  <Link href="/get-started" className="text-xs transition-opacity hover:opacity-70" style={{ color: c.sage }}>
+                    + Add space
                   </Link>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {groupedCategories.map((group, i) => (
-                    <div key={i} className="rounded-2xl border p-5"
-                      style={{ backgroundColor: c.card, borderColor: c.border }}>
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {group.topics[0].experience_categories.map((cat) => (
-                          <span key={cat} className="rounded-full px-3 py-1 text-xs"
-                            style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                            {cat}
-                          </span>
-                        ))}
-                      </div>
-                      {group.matches.length > 0 ? (
-                        <div>
-                          <p className="text-sm mb-3" style={{ color: c.inkSoft }}>
-                            <span className="inline-block h-2 w-2 rounded-full mr-2 align-middle" style={{ backgroundColor: c.green }} />
-                            {group.matches.length === 1
-                              ? `Spend time together with ${group.matches[0].matched_with}`
-                              : `${group.matches.length} people to connect with`}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {group.matches.length === 1 && group.matches[0].match_id ? (
-                              <>
-                                <Link href={`/matches/${encodeURIComponent(group.category)}?matchId=${group.matches[0].match_id}`}
-                                  className="rounded-full px-4 py-1.5 text-xs border transition-opacity hover:opacity-70"
-                                  style={{ borderColor: c.border, color: c.inkSoft }}>
-                                  Learn more
-                                </Link>
-                                <Link href={`/chat/${group.matches[0].match_id}`}
+
+                {groupedCategories.length === 0 ? (
+                  <div className="rounded-2xl p-10 text-center border"
+                    style={{ backgroundColor: c.card, borderColor: c.border }}>
+                    <p className="mb-1 font-medium text-sm" style={{ color: c.ink }}>Nothing here yet</p>
+                    <p className="mb-5 text-xs" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
+                    <Link href="/get-started"
+                      className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
+                      style={{ backgroundColor: c.sage }}>
+                      Begin
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {groupedCategories.map((group, i) => (
+                      <div key={i} className="rounded-2xl border p-5"
+                        style={{ backgroundColor: c.card, borderColor: c.border }}>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {group.topics[0].experience_categories.map((cat) => (
+                            <span key={cat} className="rounded-full px-3 py-1 text-xs"
+                              style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                        {group.matches.length > 0 ? (
+                          <div>
+                            <p className="text-sm mb-3" style={{ color: c.inkSoft }}>
+                              <span className="inline-block h-2 w-2 rounded-full mr-2 align-middle" style={{ backgroundColor: c.green }} />
+                              {group.matches.length === 1
+                                ? `Spend time together with ${group.matches[0].matched_with}`
+                                : `${group.matches.length} people to connect with`}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {group.matches.length === 1 && group.matches[0].match_id ? (
+                                <>
+                                  <Link href={`/matches/${encodeURIComponent(group.category)}?matchId=${group.matches[0].match_id}`}
+                                    className="rounded-full px-4 py-1.5 text-xs border transition-opacity hover:opacity-70"
+                                    style={{ borderColor: c.border, color: c.inkSoft }}>
+                                    Learn more
+                                  </Link>
+                                  <Link href={`/chat/${group.matches[0].match_id}`}
+                                    className="rounded-full px-4 py-1.5 text-xs font-medium text-white"
+                                    style={{ backgroundColor: c.sage }}>
+                                    Say hello
+                                  </Link>
+                                </>
+                              ) : (
+                                <Link href={`/matches/${encodeURIComponent(group.category)}?ids=${group.matches.map(m => m.match_id).join(",")}`}
                                   className="rounded-full px-4 py-1.5 text-xs font-medium text-white"
                                   style={{ backgroundColor: c.sage }}>
-                                  Say hello
+                                  See connections
                                 </Link>
-                              </>
-                            ) : (
-                              <Link href={`/matches/${encodeURIComponent(group.category)}?ids=${group.matches.map(m => m.match_id).join(",")}`}
-                                className="rounded-full px-4 py-1.5 text-xs font-medium text-white"
-                                style={{ backgroundColor: c.sage }}>
-                                See connections
-                              </Link>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-xs mb-3" style={{ color: c.inkMuted }}>
-                            <span className="inline-block h-2 w-2 rounded-full mr-2 align-middle" style={{ backgroundColor: c.apricot }} />
-                            Finding your person — sit tight.
-                          </p>
-                          <Link href={`/ai-chat/${group.topics[0].id}`}
-                            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs border transition-opacity hover:opacity-70"
-                            style={{ borderColor: c.border, color: c.inkSoft }}>
-                            ✦ Reflect with AI in the meantime
-                          </Link>
-                        </div>
-                      )}
+                        ) : (
+                          <div>
+                            <p className="text-xs mb-3" style={{ color: c.inkMuted }}>
+                              <span className="inline-block h-2 w-2 rounded-full mr-2 align-middle" style={{ backgroundColor: c.apricot }} />
+                              Finding your person — sit tight.
+                            </p>
+                            <Link href={`/ai-chat/${group.topics[0].id}`}
+                              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs border transition-opacity hover:opacity-70"
+                              style={{ borderColor: c.border, color: c.inkSoft }}>
+                              ✦ Reflect with AI in the meantime
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* AI card */}
+              {topics.length > 0 && (
+                <div className="w-full lg:w-64 shrink-0">
+                  <Link href={`/ai-chat/${topics[0].id}`}
+                    className="block rounded-2xl border p-6 transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-5"
+                      style={{ backgroundColor: `${c.sage}22` }}>
+                      <span style={{ color: c.sage }}>✦</span>
                     </div>
-                  ))}
+                    <h3 className="text-sm font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+                      Need a quiet space to talk things through?
+                    </h3>
+                    <p className="text-xs leading-relaxed mb-5" style={{ color: c.inkSoft }}>
+                      Aapun AI is here to listen — whenever you need.
+                    </p>
+                    <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-white"
+                      style={{ backgroundColor: c.sage }}>
+                      Talk with Aapun AI →
+                    </span>
+                  </Link>
                 </div>
               )}
-            </section>
-
-            {/* Reflect with AI card */}
-            <section>
-              {topics.length > 0 && (
-                <Link href={`/ai-chat/${topics[0].id}`}
-                  className="block rounded-2xl border p-6 transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-4"
-                    style={{ backgroundColor: `${c.sage}22` }}>
-                    <span style={{ color: c.sage }}>✦</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-1" style={{ color: c.ink }}>
-                    Need a quiet space to talk things through?
-                  </h3>
-                  <p className="text-sm mb-4" style={{ color: c.inkSoft }}>
-                    Aapun AI is here to listen — whenever you need.
-                  </p>
-                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Talk with Aapun AI →
-                  </span>
-                </Link>
-              )}
-            </section>
+            </div>
 
             {/* Thoughtfully chosen for you */}
             <section>
               <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                <div className="flex items-start gap-4 p-5 border-b" style={{ borderColor: c.border }}>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                {/* Header */}
+                <div className="flex items-center gap-4 px-6 py-5 border-b" style={{ borderColor: c.border }}>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                     style={{ backgroundColor: c.sageLight }}>
-                    <span style={{ color: c.sage, fontSize: 16 }}>📚</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c.sage} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm" style={{ color: c.ink }}>Thoughtfully chosen for you</h3>
@@ -331,22 +351,19 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Scrollable resource cards */}
-                <div className="flex gap-4 p-5 overflow-x-auto">
+                {/* Scrollable resource items */}
+                <div className="flex overflow-x-auto divide-x" style={{ borderColor: c.border }}>
                   {FEATURED_RESOURCES.map((res, i) => (
                     <Link href="/resources" key={i}
-                      className="flex shrink-0 items-start gap-3 rounded-xl p-3 transition-opacity hover:opacity-80 w-52"
-                      style={{ backgroundColor: res.color }}>
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-2xl"
-                        style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
-                        {res.emoji}
-                      </div>
-                      <div className="min-w-0">
+                      className="flex shrink-0 items-start gap-3 px-5 py-5 transition-opacity hover:opacity-80 w-56"
+                      style={{ borderColor: c.border }}>
+                      <BookCover bg={res.coverBg} text={res.coverText} />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-xs leading-snug" style={{ color: c.ink }}>{res.title}</p>
-                        <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>{res.subtitle}</p>
-                        <p className="text-xs mt-1 leading-snug line-clamp-2" style={{ color: c.inkSoft }}>{res.description}</p>
-                        <span className="inline-block mt-2 rounded-full px-3 py-0.5 text-xs font-medium"
-                          style={{ backgroundColor: "rgba(255,255,255,0.7)", color: c.ink }}>
+                        <p className="text-xs mt-0.5 mb-1" style={{ color: c.inkMuted }}>{res.subtitle}</p>
+                        <p className="text-xs leading-snug mb-3 line-clamp-2" style={{ color: c.inkSoft }}>{res.description}</p>
+                        <span className="inline-block rounded-full px-3 py-1 text-xs border"
+                          style={{ borderColor: c.border, color: c.inkSoft }}>
                           {res.type === "read" ? "Read" : "Listen"}
                         </span>
                       </div>
