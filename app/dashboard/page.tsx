@@ -307,28 +307,48 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* AI card */}
-              <div className="w-full lg:w-72 shrink-0">
-                <Link href={aiHref}
-                  className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
-                    style={{ backgroundColor: `${c.sage}22` }}>
-                    <span style={{ color: c.sage }}>✦</span>
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
-                    Need a quiet space to talk things through?
-                  </h3>
-                  <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
-                    Aapun AI is here to listen — whenever you need.
-                  </p>
-                  <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Talk with Aapun AI →
-                  </span>
-                </Link>
-              </div>
-            </div>
+              {/* Right column — AI + Notes */}
+<div className="w-full lg:w-72 shrink-0 space-y-4">
+  {/* AI card */}
+  <Link href={aiHref}
+    className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
+    style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}22` }}>
+    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
+      style={{ backgroundColor: `${c.sage}22` }}>
+      <span style={{ color: c.sage }}>✦</span>
+    </div>
+    <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+      Need a quiet space to talk things through?
+    </h3>
+    <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
+      Aapun AI is here to listen — whenever you need.
+    </p>
+    <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white"
+      style={{ backgroundColor: c.sage }}>
+      Talk with Aapun AI →
+    </span>
+  </Link>
+
+  {/* Notes card */}
+  <Link href="/notes"
+    className="block rounded-2xl border p-7 transition-opacity hover:opacity-90"
+    style={{ backgroundColor: c.card, borderColor: c.border }}>
+    <div className="flex h-9 w-9 items-center justify-center rounded-full mb-6"
+      style={{ backgroundColor: c.sageLight }}>
+      <span style={{ color: c.sage }}>✏️</span>
+    </div>
+    <h3 className="text-xl font-semibold mb-2 leading-snug" style={{ color: c.ink }}>
+      Notes for the day
+    </h3>
+    <p className="text-sm leading-relaxed mb-6" style={{ color: c.inkSoft }}>
+      A private space for your thoughts. Only you can see these.
+    </p>
+    <span className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
+      style={{ backgroundColor: c.sageLight, color: c.sage }}>
+      Write a note →
+    </span>
+  </Link>
+</div>
 
             {/* Today's resources */}
             {resources.length > 0 && (
