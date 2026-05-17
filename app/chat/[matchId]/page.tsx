@@ -308,11 +308,7 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* Privacy notice */}
-      <div className="px-6 py-2 text-center text-xs" style={{ backgroundColor: c.sageLight, color: c.inkMuted }}>
-        🔒 Private conversation — messages are automatically deleted after 3 days.
-        {otherIsAnonymous && " Your match has chosen to stay anonymous."}
-      </div>
+
 
       {/* Messages */}
       <main className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
@@ -392,6 +388,15 @@ export default function ChatPage() {
               style={{ backgroundColor: c.sage }}>
               ↑
             </button>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: c.border }}>
+            <p className="text-xs" style={{ color: c.inkMuted }}>
+              🔒 Private — messages deleted after 3 days.
+              {otherIsAnonymous && " Your match is anonymous."}
+            </p>
+            <a href="/notes" className="text-xs transition-opacity hover:opacity-70" style={{ color: c.sage }}>
+              📝 Take a note
+            </a>
           </div>
         </div>
       </footer>
