@@ -256,34 +256,36 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {groupedCategories.map((group, i) => (
-                    <div key={i} className="rounded-2xl border px-5 py-4 flex items-center gap-4"
+                    <div key={i} className="rounded-2xl border p-4"
                       style={{ backgroundColor: c.card, borderColor: c.border }}>
-                      <CategoryIcon category={group.topics[0].experience_categories[0]} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm mb-0.5" style={{ color: c.ink }}>
-                          {group.topics[0].experience_categories[0]}
-                        </p>
-                        {group.matches.length > 0 ? (
-                          <p className="text-xs flex items-center gap-1.5" style={{ color: c.inkMuted }}>
-                            <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.green }} />
-                            You're matched with {group.matches[0].matched_with}
+                      <div className="flex items-center gap-3 mb-3">
+                        <CategoryIcon category={group.topics[0].experience_categories[0]} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm leading-snug" style={{ color: c.ink }}>
+                            {group.topics[0].experience_categories[0]}
                           </p>
-                        ) : (
-                          <p className="text-xs flex items-center gap-1.5" style={{ color: c.inkMuted }}>
-                            <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
-                            We're finding the right match for you
-                          </p>
-                        )}
+                          {group.matches.length > 0 ? (
+                            <p className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: c.inkMuted }}>
+                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.green }} />
+                              Matched with {group.matches[0].matched_with}
+                            </p>
+                          ) : (
+                            <p className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: c.inkMuted }}>
+                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
+                              Finding your match
+                            </p>
+                          )}
+                        </div>
                       </div>
                       {group.matches.length > 0 && group.matches[0].match_id ? (
                         <Link href={`/chat/${group.matches[0].match_id}`}
-                          className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+                          className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
                           style={{ backgroundColor: c.sageLight, color: c.sage }}>
                           Spend time together →
                         </Link>
                       ) : (
                         <Link href={`/ai-chat/${group.topics[0].id}`}
-                          className="shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+                          className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
                           style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
                           Reflect quietly for now →
                         </Link>
