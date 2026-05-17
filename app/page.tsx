@@ -195,12 +195,7 @@ export default function Home() {
         <h2 className="mb-6 text-3xl font-semibold tracking-tight" style={{ color: c.ink }}>
           Ready to find your person?
         </h2>
-        <SignUpButton mode="modal">
-          <button className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md"
-            style={{ backgroundColor: c.sage }}>
-            Get Started — it's free
-          </button>
-        </SignUpButton>
+
       </section>
 
       {/* Footer */}
