@@ -147,11 +147,11 @@ export default function DashboardPage() {
 
       if (matchIds.length > 0) {
         const { data: unread } = await supabase
-          .from("messages")
-          .select("match_id")
-          .in(match_id, matchIds)
-          .neq(sender_id, user.id)
-          .eq(read, false);
+        .from("messages")
+        .select("match_id")
+        .in("match_id", matchIds)
+        .neq("sender_id", user.id)
+        .eq("read", false);
 
         const counts: Record<string, number> = {};
         (unread || []).forEach((m: { match_id: string }) => {
