@@ -244,15 +244,28 @@ export default function DashboardPage() {
       .select("resource_id")
       .eq("user_id", userId);
     const seenIds = (seenData || []).map((r: { resource_id: string }) => r.resource_id);
+
     let query = supabase.from("resources").select("*").in("category", categories).limit(20);
     if (seenIds.length > 0) query = query.not("id", "in", `(${seenIds.join(",")})`);
     const { data: available } = await query;
-    if (!available || available.length === 0) return;
+
+    if (!available || available.length === 0) {
+      const { data: fallback } = await supabase.from("resources").select("*").in("category", categories).limit(10);
+      if (!fallback || fallback.length === 0) return;
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      setResource(fallback[seed % fallback.length]);
+      return;
+    }
+
     const today = new Date();
     const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    const picked = available[seed % available.length];
-    setResource(picked);
-    await supabase.from("user_seen_resources").insert([{ user_id: userId, resource_id: picked.id }]);
+    setResource(available[seed % available.length]);
+  }
+
+  async function markResourceSeen(resourceId: string) {
+    if (!user) return;
+    await supabase.from("user_seen_resources").insert([{ user_id: user.id, resource_id: resourceId }]);
   }
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
@@ -418,7 +431,8 @@ export default function DashboardPage() {
                 <h2 className="text-sm font-semibold mb-4" style={{ color: c.ink }}>Thoughtfully chosen for you</h2>
                 <a href={resource.link} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-4 rounded-2xl border p-4 transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: c.card, borderColor: c.border }}>
+                  style={{ backgroundColor: c.card, borderColor: c.border }}
+                  onClick={() => markResourceSeen(resource.id)}>
                   <PodcastArtwork bg={resource.cover_bg} text={resource.cover_text || resource.title} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: c.inkMuted }}>Podcast</p>
