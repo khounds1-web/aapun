@@ -155,12 +155,12 @@ const [isAnonymous, setIsAnonymous] = useState(savedChoice === "true");
         }
       });
 
-    // Mark messages as read
-    supabase
-      .from("messages")
-      .update({ read: true })
-      .eq("match_id", matchId)
-      .neq("sender_id", user.id);
+   // Mark messages as read
+fetch("/api/mark-read", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ matchId, userId: user.id }),
+});
 
     // Real-time subscription
     const channel = supabase
