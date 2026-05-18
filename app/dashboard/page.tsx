@@ -1,401 +1,282 @@
-"use client";
+import { useState } from "react";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useUser, UserButton } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-
-const c = {
-  bg: "#f5f3f8",
-  ink: "#1a1625",
-  inkSoft: "#3d3654",
-  inkMuted: "#9b91b8",
-  sage: "#6b5b9e",
-  sageLight: "#ede8f8",
-  apricot: "#c97a52",
-  apricotLight: "#f5ece6",
-  card: "#ffffff",
-  border: "#edeaf4",
-  green: "#4a7c5f",
-} as const;
-
-type Topic = {
-  id: string;
-  full_name: string;
-  description: string;
-  experience_categories: string[];
-  created_at: string;
-  matched_with?: string;
-  match_id?: string;
+const mockData = {
+  userName: "Sumana",
+  timeOfDay: "evening",
+  currentConversation: {
+    topic: "Balancing careers and parenting",
+    matchName: "RJ",
+    tags: ["identity", "ambition", "exhaustion"],
+    matchId: "match-1",
+  },
+  suggestions: [
+    { id: 1, initial: "M", name: "Maya", tag1: "Toddler mom", tag2: "Career & identity", color: "#6b5b9e" },
+    { id: 2, initial: "E", name: "Elena", tag1: "6–12 month baby", tag2: "Feeding & sleep", color: "#c97a52" },
+    { id: 3, initial: "P", name: "Priya", tag1: "Newborn mom", tag2: "Returning to work", color: "#7a9e8e" },
+  ],
+  resource: {
+    title: "The Mom Hour",
+    duration: "32 min",
+    icon: "🎧",
+  },
 };
 
-type Resource = {
-  id: string;
-  type: "listen" | "read";
-  title: string;
-  subtitle: string;
-  link: string;
-  cover_bg: string;
-  cover_text: string;
-};
-
-type GroupedCategory = {
-  category: string;
-  topics: Topic[];
-  matches: Topic[];
-  unmatched: Topic[];
-};
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning,";
-  if (hour < 17) return "Good afternoon,";
-  return "Good evening,";
+function getGreeting(time) {
+  if (time === "morning") return "Good morning";
+  if (time === "afternoon") return "Good afternoon";
+  return "Good evening";
 }
 
-function getGreetingEmoji() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "☀️";
-  if (hour < 17) return "🌤️";
-  return "🌙";
-}
-
-function CategoryIcon({ category }: { category: string }) {
-  const icons: Record<string, string> = {
-    "Balancing careers and parenting": "💼",
-    "First-time parents": "🌱",
-    "Postpartum depression/anxiety": "♡",
-    "NICU parents": "🕊️",
-    "IVF": "✨",
-    "Immigrant parents": "🌍",
-    "Single parents": "⭐",
-    "Breastfeeding/Pumping/Formula feeding": "✦",
-    "Planning to conceive soon": "🌸",
-    "Co-parenting after divorce": "🤝",
-    "Stay-at-home moms/dads": "🏡",
-    "Parents of neurodivergent children": "🧡",
-    "Parents of autistic children": "🧡",
-    "Pregnancy loss & miscarriage": "🕊️",
-    "Parenting with a partner who doesn't share the load": "⚖️",
-    "Hiring a nanny/caregiver": "🏠",
-    "Other": "💬",
-  };
-  return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg"
-      style={{ backgroundColor: c.sageLight }}>
-      {icons[category] || "💬"}
-    </div>
-  );
-}
-
-function PodcastArtwork({ bg, text }: { bg: string; text: string }) {
-  return (
-    <div className="shrink-0 rounded-xl flex items-center justify-center p-3 text-center"
-      style={{ width: 80, height: 80, backgroundColor: bg }}>
-      <span className="font-semibold leading-tight whitespace-pre-line text-center"
-        style={{ color: c.ink, fontSize: 10 }}>
-        {text}
-      </span>
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [resource, setResource] = useState<Resource | null>(null);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (!user) { router.push("/"); return; }
-    loadTopics();
-  }, [isLoaded, user]);
-
-  async function loadTopics() {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (error) console.error(error);
-    const topicsData = data || [];
-    setTopics(topicsData);
-    setLoading(false);
-
-    const allCategories = Array.from(
-      new Set(topicsData.flatMap((t: Topic) => t.experience_categories))
-    );
-    if (allCategories.length > 0) {
-      await loadDailyResource(user.id, allCategories);
-    }
-
-    // Fetch unread message counts per match
-    if (user && topicsData.length > 0) {
-      const matchIds = topicsData
-        .filter((t: Topic) => t.match_id)
-        .map((t: Topic) => t.match_id);
-
-      if (matchIds.length > 0) {
-        const { data: unread } = await supabase
-        .from("messages")
-        .select("match_id")
-        .in("match_id", matchIds)
-        .neq("sender_id", user.id)
-        .eq("read", false);
-
-        const counts: Record<string, number> = {};
-        (unread || []).forEach((m: { match_id: string }) => {
-          counts[m.match_id] = (counts[m.match_id] || 0) + 1;
-        });
-        setUnreadCounts(counts);
-      }
-    }
-  }
-
-  async function loadDailyResource(userId: string, categories: string[]) {
-    const { data: seenData } = await supabase
-      .from("user_seen_resources")
-      .select("resource_id")
-      .eq("user_id", userId);
-
-    const seenIds = (seenData || []).map((r: { resource_id: string }) => r.resource_id);
-
-    let query = supabase
-      .from("resources")
-      .select("*")
-      .in("category", categories)
-      .limit(20);
-
-    if (seenIds.length > 0) {
-      query = query.not("id", "in", `(${seenIds.join(",")})`);
-    }
-
-    const { data: available } = await query;
-    if (!available || available.length === 0) return;
-
-    const today = new Date();
-    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    const picked = available[seed % available.length];
-
-    setResource(picked);
-
-    await supabase.from("user_seen_resources").insert([
-      { user_id: userId, resource_id: picked.id }
-    ]);
-  }
-
-  const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
-
-  const groupedCategories: GroupedCategory[] = [];
-  const seen = new Map<string, GroupedCategory>();
-  topics.forEach((topic) => {
-    const key = topic.experience_categories.join(",");
-    if (!seen.has(key)) {
-      const group: GroupedCategory = {
-        category: topic.experience_categories[0] || "General",
-        topics: [], matches: [], unmatched: [],
-      };
-      seen.set(key, group);
-      groupedCategories.push(group);
-    }
-    const group = seen.get(key)!;
-    group.topics.push(topic);
-    if (topic.matched_with) group.matches.push(topic);
-    else group.unmatched.push(topic);
-  });
-
-  const aiHref = topics.length > 0 ? `/ai-chat/${topics[0].id}` : "/get-started";
+export default function AapunDashboard() {
+  const [activeTab, setActiveTab] = useState("home");
+  const { userName, timeOfDay, currentConversation, suggestions, resource } = mockData;
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
-
-      {/* Nav */}
-      <header className="px-6 sm:px-10" style={{ backgroundColor: c.bg }}>
-        <div className="mx-auto max-w-2xl flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <AapunMark size={26} />
-            <span className="text-sm font-semibold" style={{ color: c.ink }}>Aapun</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/get-started" className="text-sm" style={{ color: c.inkMuted }}>Spaces</Link>
-            <Link href="/notes" className="text-sm" style={{ color: c.inkMuted }}>Notes</Link>
-            <UserButton />
-          </div>
+    <div style={{
+      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+      background: "#f7f5f2",
+      minHeight: "100vh",
+      maxWidth: "430px",
+      margin: "0 auto",
+      display: "flex",
+      flexDirection: "column",
+      position: "relative",
+    }}>
+      {/* Header */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "16px 20px 8px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{
+            width: "28px", height: "28px",
+            background: "linear-gradient(135deg, #9b8ec4 0%, #c97a52 100%)",
+            borderRadius: "50%",
+            opacity: 0.85,
+          }} />
+          <span style={{ fontSize: "17px", fontWeight: "600", color: "#1a1a2e", letterSpacing: "-0.3px" }}>aapun</span>
         </div>
-      </header>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button style={{
+            background: "none", border: "none", cursor: "pointer",
+            width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "50%", color: "#4a4a6a",
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </button>
+          <div style={{
+            width: "34px", height: "34px", borderRadius: "50%",
+            background: "#6b5b9e", display: "flex", alignItems: "center",
+            justifyContent: "center", color: "white", fontSize: "14px", fontWeight: "600",
+          }}>S</div>
+        </div>
+      </div>
 
-      <main className="mx-auto max-w-2xl px-6 sm:px-10">
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 20px 100px" }}>
 
-        {/* Hero greeting */}
-        <div className="pt-10 pb-12">
-          <p className="text-base mb-1" style={{ color: c.inkMuted }}>
-            {getGreetingEmoji()}
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-semibold leading-tight mb-4" style={{ color: c.ink }}>
-            {getGreeting()}<br />{firstName}
+        {/* Greeting */}
+        <div style={{ marginBottom: "24px", marginTop: "8px" }}>
+          <h1 style={{
+            fontSize: "30px", fontWeight: "700", color: "#1a1a2e",
+            letterSpacing: "-0.8px", lineHeight: "1.2", margin: "0 0 6px",
+          }}>
+            {getGreeting(timeOfDay)},<br />{userName} 👋
           </h1>
-          <p className="text-base leading-relaxed" style={{ color: c.inkMuted }}>
-            You're showing up for yourself.<br />We're glad you're here.
+          <p style={{ fontSize: "15px", color: "#7a7a9a", margin: 0, lineHeight: "1.5" }}>
+            Meaningful conversations<br />beyond your everyday circle.
           </p>
         </div>
 
-        {loading ? (
-          <p className="text-sm pb-16" style={{ color: c.inkMuted }}>Loading...</p>
-        ) : (
-          <div className="space-y-12 pb-20">
-
-            {/* Your spaces — full width */}
-            <section>
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-base font-semibold" style={{ color: c.ink }}>Your spaces</h2>
-                  <p className="text-sm mt-0.5" style={{ color: c.inkMuted }}>Where meaningful conversations begin.</p>
-                </div>
-                <Link href="/get-started" className="text-sm transition-opacity hover:opacity-60" style={{ color: c.sage }}>
-                  + New space
-                </Link>
-              </div>
-
-              {groupedCategories.length === 0 ? (
-                <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                  <p className="mb-2 font-medium text-sm" style={{ color: c.ink }}>Nothing here yet</p>
-                  <p className="mb-6 text-sm" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
-                  <Link href="/get-started"
-                    className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
-                    style={{ backgroundColor: c.sage }}>
-                    Begin
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {groupedCategories.map((group, i) => (
-                    <div key={i} className="rounded-2xl border p-4"
-                      style={{ backgroundColor: c.card, borderColor: c.border }}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <CategoryIcon category={group.topics[0].experience_categories[0]} />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm leading-snug" style={{ color: c.ink }}>
-                            {group.topics[0].experience_categories[0]}
-                          </p>
-                          {group.matches.length > 0 ? (
-                            <p className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: c.inkMuted }}>
-                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.green }} />
-                              Matched with {group.matches[0].matched_with}
-                            </p>
-                          ) : (
-                            <p className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: c.inkMuted }}>
-                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
-                              Finding your match
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {group.matches.length > 0 && group.matches[0].match_id ? (
-  <Link href={`/chat/${group.matches[0].match_id}`}
-    className="w-full inline-flex items-center justify-center gap-2 rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
-    style={{ backgroundColor: c.sageLight, color: c.sage }}>
-    Spend time together →
-    {unreadCounts[group.matches[0].match_id!] > 0 && (
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-white font-bold"
-      style={{ backgroundColor: c.apricot, fontSize: 11 }}>
-      {unreadCounts[group.matches[0].match_id!]}
-    </span>
-    )}
-  </Link>
-                      ) : (
-                        <Link href={`/ai-chat/${group.topics[0].id}`}
-                          className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
-                          style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
-                          Reflect quietly for now →
-                        </Link>
-                      )}
-                    </div>
+        {/* Current conversation card */}
+        <div style={{
+          background: "white",
+          borderRadius: "20px",
+          padding: "20px",
+          marginBottom: "28px",
+          border: "0.5px solid rgba(107,91,158,0.12)",
+          boxShadow: "0 2px 12px rgba(107,91,158,0.07)",
+        }}>
+          <p style={{
+            fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em",
+            color: "#6b5b9e", margin: "0 0 10px", textTransform: "uppercase",
+          }}>Your current conversation</p>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+            <div style={{
+              width: "48px", height: "48px", borderRadius: "50%",
+              background: "#ede9f7", display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#6b5b9e">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ fontSize: "17px", fontWeight: "600", color: "#1a1a2e", margin: "0 0 3px", letterSpacing: "-0.3px" }}>
+                {currentConversation.topic}
+              </h2>
+              <p style={{ fontSize: "14px", color: "#7a7a9a", margin: "0 0 14px" }}>
+                You and {currentConversation.matchName}
+              </p>
+              <p style={{ fontSize: "12px", color: "#9a9ab8", margin: "0 0 10px" }}>You've been talking about:</p>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {currentConversation.tags.map(tag => (
+                    <span key={tag} style={{
+                      fontSize: "13px", color: "#4a4a6a",
+                      background: "#f0edf8", borderRadius: "20px",
+                      padding: "4px 12px", fontWeight: "400",
+                    }}>{tag}</span>
                   ))}
                 </div>
-              )}
-            </section>
-
-            {/* Thoughtfully chosen — 1 resource */}
-            {resource && (
-              <section>
-                <div className="mb-5">
-                  <h2 className="text-base font-semibold" style={{ color: c.ink }}>Thoughtfully chosen for you</h2>
-                  <p className="text-sm mt-0.5" style={{ color: c.inkMuted }}>A moment to pause, learn, or feel seen.</p>
-                </div>
-                <a href={resource.link} target="_blank" rel="noopener noreferrer"
-                  className="flex items-start gap-5 rounded-2xl border p-5 transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: c.card, borderColor: c.border }}>
-                  <PodcastArtwork bg={resource.cover_bg} text={resource.cover_text || resource.title} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: c.inkMuted }}>
-                      Podcast
-                    </p>
-                    <p className="font-semibold text-base mb-1" style={{ color: c.ink }}>{resource.title}</p>
-                    <p className="text-sm leading-relaxed mb-4" style={{ color: c.inkMuted }}>{resource.subtitle}</p>
-                    <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium"
-                      style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                      Listen →
-                    </span>
-                  </div>
-                </a>
-              </section>
-            )}
-
-            {/* Notes */}
-            <section>
-              <Link href="/notes"
-                className="flex items-center justify-between rounded-2xl border px-6 py-5 transition-opacity hover:opacity-80"
-                style={{ backgroundColor: c.card, borderColor: c.border }}>
-                <div>
-                  <h2 className="text-base font-semibold mb-0.5" style={{ color: c.ink }}>Notes for the day</h2>
-                  <p className="text-sm" style={{ color: c.inkMuted }}>A private space for your thoughts.</p>
-                </div>
-                <span className="text-xl" style={{ color: c.inkMuted }}>✏️</span>
-              </Link>
-            </section>
-
-            {/* AI — quiet, small */}
-            <section>
-              <Link href={aiHref}
-                className="flex items-center gap-3 transition-opacity hover:opacity-70"
-                style={{ color: c.inkMuted }}>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                  style={{ backgroundColor: c.sageLight }}>
-                  <span className="text-sm" style={{ color: c.sage }}>✦</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: c.ink }}>Need a quiet moment?</p>
-                  <p className="text-xs" style={{ color: c.sage }}>Reflect with Aapun AI →</p>
-                </div>
-              </Link>
-            </section>
-
-            <p className="text-xs italic text-center" style={{ color: c.inkMuted }}>
-              This is your quiet place. Come back anytime. ♡
-            </p>
-
+                <button style={{
+                  background: "#6b5b9e", color: "white", border: "none",
+                  borderRadius: "22px", padding: "10px 18px",
+                  fontSize: "14px", fontWeight: "500", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "6px",
+                  whiteSpace: "nowrap",
+                }}>
+                  Continue →
+                </button>
+              </div>
+            </div>
           </div>
-        )}
-      </main>
-    </div>
-  );
-}
+        </div>
 
-function AapunMark({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="15" cy="20" r="11" fill="rgba(107,91,158,0.2)" stroke="rgba(107,91,158,0.5)" strokeWidth="1.5" />
-      <circle cx="25" cy="20" r="11" fill="rgba(201,122,82,0.2)" stroke="rgba(201,122,82,0.5)" strokeWidth="1.5" />
-    </svg>
+        {/* People you may connect with */}
+        <div style={{ marginBottom: "28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "14px" }}>
+            <h2 style={{ fontSize: "17px", fontWeight: "600", color: "#1a1a2e", margin: 0, letterSpacing: "-0.3px" }}>
+              People you may connect with
+            </h2>
+            <button style={{
+              background: "none", border: "none", fontSize: "13px",
+              color: "#6b5b9e", cursor: "pointer", fontWeight: "500",
+              display: "flex", alignItems: "center", gap: "3px", padding: 0,
+            }}>See all →</button>
+          </div>
+
+          <div style={{
+            background: "white", borderRadius: "20px",
+            border: "0.5px solid rgba(107,91,158,0.1)",
+            overflow: "hidden",
+          }}>
+            {suggestions.map((person, idx) => (
+              <div key={person.id} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "14px 18px",
+                borderBottom: idx < suggestions.length - 1 ? "0.5px solid #f0edf8" : "none",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "13px" }}>
+                  <div style={{
+                    width: "40px", height: "40px", borderRadius: "50%",
+                    background: idx === 0 ? "#ede9f7" : idx === 1 ? "#f7ede6" : "#e8f0ec",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "15px", fontWeight: "600",
+                    color: idx === 0 ? "#6b5b9e" : idx === 1 ? "#c97a52" : "#4a8a6a",
+                  }}>{person.initial}</div>
+                  <div>
+                    <p style={{ fontSize: "15px", fontWeight: "500", color: "#1a1a2e", margin: "0 0 2px" }}>{person.name}</p>
+                    <p style={{ fontSize: "13px", color: "#9a9ab8", margin: 0 }}>
+                      {person.tag1} · {person.tag2}
+                    </p>
+                  </div>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a9ab8" strokeWidth="2">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom row: resource + AI */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          {/* Resource card */}
+          <div style={{
+            background: "white", borderRadius: "20px", padding: "16px",
+            border: "0.5px solid rgba(201,122,82,0.15)",
+          }}>
+            <p style={{
+              fontSize: "10px", fontWeight: "600", letterSpacing: "0.08em",
+              color: "#c97a52", margin: "0 0 10px", textTransform: "uppercase",
+            }}>For tonight</p>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "12px",
+              background: "#faf0e8", display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: "18px", marginBottom: "10px",
+            }}>🎧</div>
+            <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a2e", margin: "0 0 4px", lineHeight: "1.3" }}>
+              {resource.title}
+            </p>
+            <p style={{ fontSize: "12px", color: "#9a9ab8", margin: "0 0 12px" }}>{resource.duration}</p>
+            <button style={{
+              background: "none", border: "none", padding: 0,
+              fontSize: "13px", color: "#c97a52", fontWeight: "500", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: "4px",
+            }}>Listen →</button>
+          </div>
+
+          {/* AI reflection card */}
+          <div style={{
+            background: "#ede9f7", borderRadius: "20px", padding: "16px",
+            display: "flex", flexDirection: "column", justifyContent: "space-between",
+          }}>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "50%",
+              background: "#6b5b9e", display: "flex", alignItems: "center",
+              justifyContent: "center", marginBottom: "12px",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a2e", margin: "0 0 4px", lineHeight: "1.3" }}>
+                Reflect quietly<br />with Aapun AI
+              </p>
+              <button style={{
+                background: "none", border: "none", padding: 0,
+                fontSize: "13px", color: "#6b5b9e", fontWeight: "500", cursor: "pointer",
+                marginTop: "10px", display: "flex", alignItems: "center", gap: "4px",
+              }}>Begin →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom nav */}
+      <div style={{
+        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: "430px",
+        background: "white", borderTop: "0.5px solid #eeeaf4",
+        display: "flex", justifyContent: "space-around",
+        padding: "10px 0 20px",
+        zIndex: 10,
+      }}>
+        {[
+          { id: "home", label: "Home", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill={activeTab === "home" ? "#6b5b9e" : "none"} stroke={activeTab === "home" ? "#6b5b9e" : "#9a9ab8"} strokeWidth="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+          { id: "spaces", label: "Spaces", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={activeTab === "spaces" ? "#6b5b9e" : "#9a9ab8"} strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+          { id: "reflections", label: "Reflections", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={activeTab === "reflections" ? "#6b5b9e" : "#9a9ab8"} strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> },
+          { id: "profile", label: "Profile", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={activeTab === "profile" ? "#6b5b9e" : "#9a9ab8"} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
+            padding: "4px 16px",
+          }}>
+            {tab.icon}
+            <span style={{
+              fontSize: "11px", fontWeight: "500",
+              color: activeTab === tab.id ? "#6b5b9e" : "#9a9ab8",
+            }}>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
