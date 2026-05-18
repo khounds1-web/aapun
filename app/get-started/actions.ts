@@ -15,7 +15,6 @@ export async function saveProfile(data: {
     return { error: "Not signed in" };
   }
 
-  // Get user's email from Clerk
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
   const email = user.emailAddresses[0]?.emailAddress || "";
@@ -25,7 +24,6 @@ export async function saveProfile(data: {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Save the new profile
   const { data: newProfile, error } = await supabase
     .from("profiles")
     .insert({
@@ -42,7 +40,6 @@ export async function saveProfile(data: {
     return { error: error.message };
   }
 
-  // Notify admin
   try {
     await resend.emails.send({
       from: "onboarding@resend.dev",
@@ -62,12 +59,10 @@ export async function saveProfile(data: {
     console.error("Admin email failed:", emailError);
   }
 
-  // Auto-match with other users who share categories
   try {
     await autoMatch(supabase, newProfile, data.fullName, email, data.experienceCategories);
   } catch (matchError) {
     console.error("Auto-match failed:", matchError);
-    // Don't fail the signup if matching fails
   }
 
   return { success: true };
@@ -81,8 +76,7 @@ async function autoMatch(
   newUserEmail: string,
   categories: string[]
 ) {
-  // Find all other profiles with overlapping categories
-  // excluding the current user and already matched profiles
+  // Find all profiles with overlapping categories, different user
   const { data: potentialMatches } = await supabase
     .from("profiles")
     .select("*")
@@ -91,40 +85,54 @@ async function autoMatch(
 
   if (!potentialMatches || potentialMatches.length === 0) return;
 
-  // Match with ALL potential matches (multiple matches allowed)
-  for (const match of potentialMatches) {
-    // Skip if already matched with this person
-    const alreadyMatched =
-      match.matched_with === newUserName ||
-      match.match_id?.includes(newProfile.id);
+  // Track which user_ids we've already matched with in this run
+  const matchedUserIds = new Set<string>();
 
-    if (alreadyMatched) continue;
+  for (const match of potentialMatches) {
+    // Skip same user (different profiles of same person)
+    if (match.user_id === newProfile.user_id) continue;
+
+    // Skip if already matched this user in this run
+    if (matchedUserIds.has(match.user_id)) continue;
+
+    // Skip if already matched with this user_id previously
+    const { data: existingMatch } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", newProfile.user_id)
+      .eq("matched_user_id", match.user_id)
+      .limit(1);
+
+    if (existingMatch && existingMatch.length > 0) continue;
+
+    matchedUserIds.add(match.user_id);
 
     const matchId = `${newProfile.id}-${match.id}`;
 
-    // Update new user's profile with this match
+    // Update new user's profile
     await supabase
       .from("profiles")
       .update({
         match_status: "We found you a match!",
         matched_with: match.full_name,
+        matched_user_id: match.user_id,
         match_id: matchId,
       })
       .eq("id", newProfile.id);
 
-    // Update the existing user's profile with new user as match
+    // Update matched user's profile
     await supabase
       .from("profiles")
       .update({
         match_status: "We found you a match!",
         matched_with: newUserName,
+        matched_user_id: newProfile.user_id,
         match_id: matchId,
       })
       .eq("id", match.id);
 
-    // Notify both users by email
+    // Notify both
     try {
-      // Notify new user
       if (newUserEmail) {
         await resend.emails.send({
           from: "onboarding@resend.dev",
@@ -132,16 +140,14 @@ async function autoMatch(
           subject: "You've been matched on Aapun! 🎉",
           html: `
             <h2>Great news, ${newUserName}!</h2>
-            <p>We've matched you with <strong>${match.full_name}</strong> — a parent who shares similar experiences.</p>
+            <p>We've matched you with <strong>${match.full_name}</strong> — someone who shares similar experiences.</p>
             <p>Log in to say hi!</p>
             <br/>
             <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
-            <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with parents who get it.</p>
+            <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with people who get it.</p>
           `,
         });
       }
-
-      // Notify existing matched user
       if (match.email) {
         await resend.emails.send({
           from: "onboarding@resend.dev",
@@ -149,11 +155,11 @@ async function autoMatch(
           subject: "You've been matched on Aapun! 🎉",
           html: `
             <h2>Great news, ${match.full_name}!</h2>
-            <p>We've matched you with <strong>${newUserName}</strong> — a parent who shares similar experiences.</p>
+            <p>We've matched you with <strong>${newUserName}</strong> — someone who shares similar experiences.</p>
             <p>Log in to say hi!</p>
             <br/>
             <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
-            <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with parents who get it.</p>
+            <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with people who get it.</p>
           `,
         });
       }
@@ -184,30 +190,15 @@ export async function notifyMatch(
         from: "onboarding@resend.dev",
         to: emailA,
         subject: "You've been matched on Aapun! 🎉",
-        html: `
-          <h2>Great news, ${nameA}!</h2>
-          <p>We've matched you with <strong>${nameB}</strong> — a parent who shares similar experiences.</p>
-          <p>Log in to say hi!</p>
-          <br/>
-          <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
-          <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with parents who get it.</p>
-        `,
+        html: `<h2>Great news, ${nameA}!</h2><p>We've matched you with <strong>${nameB}</strong>.</p><p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>`,
       });
     }
-
     if (emailB) {
       await resend.emails.send({
         from: "onboarding@resend.dev",
         to: emailB,
         subject: "You've been matched on Aapun! 🎉",
-        html: `
-          <h2>Great news, ${nameB}!</h2>
-          <p>We've matched you with <strong>${nameA}</strong> — a parent who shares similar experiences.</p>
-          <p>Log in to say hi!</p>
-          <br/>
-          <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
-          <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with parents who get it.</p>
-        `,
+        html: `<h2>Great news, ${nameB}!</h2><p>We've matched you with <strong>${nameA}</strong>.</p><p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>`,
       });
     }
   } catch (err) {
@@ -234,10 +225,8 @@ export async function notifyMessage(
         html: `
           <h2>You have a new message, ${recipientName}!</h2>
           <p><strong>${senderName}</strong> sent you a message on Aapun.</p>
-          <p>Log in to read it and reply.</p>
-          <br/>
           <p><a href="https://aapun.vercel.app/chat/${matchId}">Open conversation</a></p>
-          <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with parents who get it.</p>
+          <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with people who get it.</p>
         `,
       });
     }
