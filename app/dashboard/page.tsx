@@ -311,7 +311,7 @@ export default function DashboardPage() {
             {getGreeting()} {firstName}
           </h1>
           <p className="text-sm" style={{ color: c.inkMuted }}>
-            Meaningful conversations beyond your everyday circle.
+    
           </p>
         </div>
 
