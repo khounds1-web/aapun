@@ -301,11 +301,17 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       {group.matches.length > 0 && group.matches[0].match_id ? (
-                        <Link href={`/chat/${group.matches[0].match_id}`}
-                          className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
-                          style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                          Spend time together →
-                        </Link>
+  <Link href={`/chat/${group.matches[0].match_id}`}
+    className="w-full inline-flex items-center justify-center gap-2 rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
+    style={{ backgroundColor: c.sageLight, color: c.sage }}>
+    Spend time together →
+    {unreadCounts[group.matches[0].match_id!] > 0 && (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-white"
+        style={{ backgroundColor: c.apricot, fontSize: 9 }}>
+        {unreadCounts[group.matches[0].match_id!]}
+      </span>
+    )}
+  </Link>
                       ) : (
                         <Link href={`/ai-chat/${group.topics[0].id}`}
                           className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium transition-opacity hover:opacity-80"
