@@ -15,8 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Aapun — peer conversations, human-first",
-  description:
-    "Connect with people who share similar lived experiences for warm, one-on-one peer conversations.",
+  description: "Conversations beyond your everyday circle, grounded in shared experience.",
 };
 
 export default async function RootLayout({
@@ -29,10 +28,21 @@ export default async function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#6b5b9e" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Aapun" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className="h-full">
         <ClerkProvider>
           {children}
         </ClerkProvider>
+        <script dangerouslySetInnerHTML={{
+          __html: `if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`
+        }} />
       </body>
     </html>
   );
