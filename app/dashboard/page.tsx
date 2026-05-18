@@ -517,8 +517,8 @@ export default function DashboardPage() {
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="15" cy="20" r="11" fill="rgba(107,91,158,0.2)" stroke="rgba(107,91,158,0.5)" strokeWidth="1.5" />
-      <circle cx="25" cy="20" r="11" fill="rgba(201,122,82,0.2)" stroke="rgba(201,122,82,0.5)" strokeWidth="1.5" />
+      <circle cx="15" cy="20" r="11" fill={`rgba(107,91,158,0.33)`} stroke="rgba(107,91,158,0.8)" strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill={`rgba(201,122,82,0.33)`} stroke="rgba(201,122,82,0.8)" strokeWidth="1.5" />
     </svg>
   );
 }
