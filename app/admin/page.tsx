@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [selectedB, setSelectedB] = useState<Profile | null>(null);
   const [matching, setMatching] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [rematching, setRematching] = useState(false);
 
   function handleLogin() {
     if (password === ADMIN_PASSWORD) {
@@ -63,21 +64,24 @@ export default function AdminPage() {
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (error) console.error(error);
     setProfiles(data || []);
     setLoading(false);
   }
-  <button
-  onClick={async () => {
-    const res = await fetch("/api/rematch", { method: "POST" });
-    const data = await res.json();
-    alert(`Matched ${data.matched} pairs`);
-  }}
-  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-  style={{ backgroundColor: "#6b5b9e" }}>
-  Re-run matching
-</button>
+
+  async function handleRematch() {
+    setRematching(true);
+    try {
+      const res = await fetch("/api/rematch", { method: "POST" });
+      const data = await res.json();
+      setSuccessMessage(`✓ Matched ${data.matched} new pairs`);
+      loadProfiles();
+    } catch (err) {
+      console.error(err);
+      setSuccessMessage("Something went wrong — check logs");
+    }
+    setRematching(false);
+  }
 
   async function handleMatch() {
     if (!selectedA || !selectedB) return;
@@ -91,22 +95,10 @@ export default function AdminPage() {
     const matchId = `${selectedA.id}-${selectedB.id}`;
     const message = "We found you a match!";
 
-    await supabase
-      .from("profiles")
-      .update({ match_status: message, matched_with: selectedB.full_name, match_id: matchId })
-      .eq("id", selectedA.id);
+    await supabase.from("profiles").update({ match_status: message, matched_with: selectedB.full_name, match_id: matchId }).eq("id", selectedA.id);
+    await supabase.from("profiles").update({ match_status: message, matched_with: selectedA.full_name, match_id: matchId }).eq("id", selectedB.id);
 
-    await supabase
-      .from("profiles")
-      .update({ match_status: message, matched_with: selectedA.full_name, match_id: matchId })
-      .eq("id", selectedB.id);
-
-    await notifyMatch(
-      selectedA.user_id,
-      selectedB.user_id,
-      selectedA.full_name,
-      selectedB.full_name
-    );
+    await notifyMatch(selectedA.user_id, selectedB.user_id, selectedA.full_name, selectedB.full_name);
 
     setSuccessMessage(`✓ Matched ${selectedA.full_name} with ${selectedB.full_name} — emails sent!`);
     setSelectedA(null);
@@ -127,12 +119,12 @@ export default function AdminPage() {
             onChange={(e) => { setPassword(e.target.value); setPasswordError(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             placeholder="Password"
-            className="mb-3 w-full rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-[#3a6b5c]/30"
+            className="mb-3 w-full rounded-xl px-4 py-3 text-base outline-none"
             style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: passwordError ? c.apricot : c.border, color: c.ink }}
           />
           {passwordError && <p className="mb-3 text-sm" style={{ color: c.apricot }}>Incorrect password</p>}
           <button onClick={handleLogin}
-            className="w-full rounded-full py-3 text-sm font-medium text-white hover:bg-[#2f584b]"
+            className="w-full rounded-full py-3 text-sm font-medium text-white"
             style={{ backgroundColor: c.sage }}>
             Enter
           </button>
@@ -144,12 +136,21 @@ export default function AdminPage() {
   return (
     <div className="min-h-full font-sans" style={{ backgroundColor: c.bg, color: c.inkSoft }}>
       <main className="mx-auto max-w-4xl px-6 py-10 sm:px-8 sm:py-14">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold" style={{ color: c.ink }}>Aapun Admin</h1>
-          <button onClick={loadProfiles}
-            className="rounded-full px-4 py-2 text-sm font-medium hover:bg-black/5" style={{ color: c.inkSoft }}>
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRematch}
+              disabled={rematching}
+              className="rounded-full px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              style={{ backgroundColor: "#6b5b9e" }}>
+              {rematching ? "Matching..." : "Re-run matching"}
+            </button>
+            <button onClick={loadProfiles}
+              className="rounded-full px-4 py-2 text-sm font-medium hover:bg-black/5" style={{ color: c.inkSoft }}>
+              Refresh
+            </button>
+          </div>
         </div>
 
         {successMessage && (
@@ -166,7 +167,7 @@ export default function AdminPage() {
             </p>
             <div className="flex gap-3">
               <button onClick={handleMatch} disabled={matching}
-                className="rounded-full px-6 py-2 text-sm font-medium text-white hover:bg-[#2f584b] disabled:opacity-50"
+                className="rounded-full px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
                 style={{ backgroundColor: c.sage }}>
                 {matching ? "Matching…" : "Confirm match & notify"}
               </button>
@@ -186,19 +187,14 @@ export default function AdminPage() {
               <div key={profile.id} className="rounded-2xl p-6 shadow-sm"
                 style={{
                   backgroundColor: c.card,
-                  borderWidth: 1,
-                  borderStyle: "solid",
+                  borderWidth: 1, borderStyle: "solid",
                   borderColor: selectedA?.id === profile.id || selectedB?.id === profile.id ? c.sage : c.border,
                 }}>
                 <div className="mb-2 flex items-start justify-between gap-4">
                   <div>
                     <p className="font-semibold" style={{ color: c.ink }}>{profile.full_name}</p>
-                    {profile.email && (
-                      <p className="text-xs" style={{ color: c.inkMuted }}>{profile.email}</p>
-                    )}
-                    <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
-                      {new Date(profile.created_at).toLocaleDateString()}
-                    </p>
+                    {profile.email && <p className="text-xs" style={{ color: c.inkMuted }}>{profile.email}</p>}
+                    <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>{new Date(profile.created_at).toLocaleDateString()}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -208,17 +204,13 @@ export default function AdminPage() {
                       else if (!selectedA) setSelectedA(profile);
                       else if (!selectedB) setSelectedB(profile);
                     }}
-                    className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
-                    style={
-                      selectedA?.id === profile.id || selectedB?.id === profile.id
-                        ? { backgroundColor: c.sage, color: "#fff" }
-                        : { backgroundColor: c.sageLight, color: c.sage }
-                    }
-                  >
+                    className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium"
+                    style={selectedA?.id === profile.id || selectedB?.id === profile.id
+                      ? { backgroundColor: c.sage, color: "#fff" }
+                      : { backgroundColor: c.sageLight, color: c.sage }}>
                     {selectedA?.id === profile.id || selectedB?.id === profile.id ? "Selected" : "Select"}
                   </button>
                 </div>
-
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {profile.experience_categories.map((cat) => (
                     <span key={cat} className="rounded-full px-2.5 py-0.5 text-xs"
@@ -227,13 +219,11 @@ export default function AdminPage() {
                     </span>
                   ))}
                 </div>
-
                 {profile.description && (
                   <p className="mb-3 text-sm leading-relaxed line-clamp-2" style={{ color: c.inkSoft }}>
                     {profile.description}
                   </p>
                 )}
-
                 {profile.matched_with ? (
                   <p className="text-xs font-medium" style={{ color: c.sage }}>✓ Matched with {profile.matched_with}</p>
                 ) : (
