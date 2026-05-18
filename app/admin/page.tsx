@@ -68,6 +68,16 @@ export default function AdminPage() {
     setProfiles(data || []);
     setLoading(false);
   }
+  <button
+  onClick={async () => {
+    const res = await fetch("/api/rematch", { method: "POST" });
+    const data = await res.json();
+    alert(`Matched ${data.matched} pairs`);
+  }}
+  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+  style={{ backgroundColor: "#6b5b9e" }}>
+  Re-run matching
+</button>
 
   async function handleMatch() {
     if (!selectedA || !selectedB) return;
