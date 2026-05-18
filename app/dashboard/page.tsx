@@ -306,10 +306,10 @@ export default function DashboardPage() {
     style={{ backgroundColor: c.sageLight, color: c.sage }}>
     Spend time together →
     {unreadCounts[group.matches[0].match_id!] > 0 && (
-      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-white"
-        style={{ backgroundColor: c.apricot, fontSize: 9 }}>
-        {unreadCounts[group.matches[0].match_id!]}
-      </span>
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-white font-bold"
+      style={{ backgroundColor: c.apricot, fontSize: 11 }}>
+      {unreadCounts[group.matches[0].match_id!]}
+    </span>
     )}
   </Link>
                       ) : (
