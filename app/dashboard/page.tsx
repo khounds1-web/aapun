@@ -41,18 +41,17 @@ type Resource = {
   cover_text: string;
 };
 
-type GroupedCategory = {
-  category: string;
-  topics: Topic[];
-  matches: Topic[];
-  unmatched: Topic[];
+type MatchedPerson = {
+  name: string;
+  match_id: string;
+  topics: string[];
+  unread: number;
 };
 
 type Suggestion = {
   id: string;
   full_name: string;
   experience_categories: string[];
-  description: string;
   user_id: string;
 };
 
@@ -70,30 +69,14 @@ function getGreetingEmoji() {
   return "🌙";
 }
 
-function CategoryIcon({ category }: { category: string }) {
-  const icons: Record<string, string> = {
-    "Balancing careers and parenting": "💼",
-    "First-time parents": "🌱",
-    "Postpartum depression/anxiety": "♡",
-    "NICU parents": "🕊️",
-    "IVF": "✨",
-    "Immigrant parents": "🌍",
-    "Single parents": "⭐",
-    "Breastfeeding/Pumping/Formula feeding": "✦",
-    "Planning to conceive soon": "🌸",
-    "Co-parenting after divorce": "🤝",
-    "Stay-at-home moms/dads": "🏡",
-    "Parents of neurodivergent children": "🧡",
-    "Parents of autistic children": "🧡",
-    "Pregnancy loss & miscarriage": "🕊️",
-    "Parenting with a partner who doesn't share the load": "⚖️",
-    "Hiring a nanny/caregiver": "🏠",
-    "Other": "💬",
-  };
+function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+  const initial = name.charAt(0).toUpperCase();
+  const colors = ["#6b5b9e", "#c97a52", "#4a7c5f", "#9b6b5b", "#5b6b9e"];
+  const color = colors[name.charCodeAt(0) % colors.length];
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base"
-      style={{ backgroundColor: c.sageLight }}>
-      {icons[category] || "💬"}
+    <div className="shrink-0 flex items-center justify-center rounded-full text-white font-semibold"
+      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.38 }}>
+      {initial}
     </div>
   );
 }
@@ -102,8 +85,7 @@ function PodcastArtwork({ bg, text }: { bg: string; text: string }) {
   return (
     <div className="shrink-0 rounded-xl flex items-center justify-center p-2 text-center"
       style={{ width: 64, height: 64, backgroundColor: bg }}>
-      <span className="font-semibold leading-tight whitespace-pre-line"
-        style={{ color: c.ink, fontSize: 9 }}>
+      <span className="font-semibold leading-tight whitespace-pre-line" style={{ color: c.ink, fontSize: 9 }}>
         {text}
       </span>
     </div>
@@ -116,8 +98,8 @@ export default function DashboardPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [resource, setResource] = useState<Resource | null>(null);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [matchedPeople, setMatchedPeople] = useState<MatchedPerson[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
 
   const supabase = createClient(
@@ -128,71 +110,91 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { router.push("/"); return; }
-    loadTopics();
+    loadData();
   }, [isLoaded, user]);
 
-  async function loadTopics() {
+  async function loadData() {
     if (!user) return;
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
+
     if (error) console.error(error);
     const topicsData = data || [];
     setTopics(topicsData);
     setLoading(false);
 
+    // Group matches by person
+    const matchMap = new Map<string, MatchedPerson>();
+    const matchIds: string[] = [];
+
+    topicsData.forEach((t: Topic) => {
+      if (t.matched_with && t.match_id) {
+        matchIds.push(t.match_id);
+        if (matchMap.has(t.matched_with)) {
+          matchMap.get(t.matched_with)!.topics.push(...t.experience_categories);
+        } else {
+          matchMap.set(t.matched_with, {
+            name: t.matched_with,
+            match_id: t.match_id,
+            topics: [...t.experience_categories],
+            unread: 0,
+          });
+        }
+      }
+    });
+
+    // Fetch unread counts
+    if (matchIds.length > 0) {
+      const { data: unread } = await supabase
+        .from("messages")
+        .select("match_id")
+        .in("match_id", matchIds)
+        .neq("sender_id", user.id)
+        .eq("read", false);
+
+      (unread || []).forEach((m: { match_id: string }) => {
+        for (const [, person] of matchMap) {
+          if (person.match_id === m.match_id) {
+            person.unread++;
+          }
+        }
+      });
+    }
+
+    setMatchedPeople(Array.from(matchMap.values()));
+
+    // Load suggestions and resources
     const allCategories = Array.from(
       new Set(topicsData.flatMap((t: Topic) => t.experience_categories))
     );
 
     if (allCategories.length > 0) {
-      await loadDailyResource(user.id, allCategories);
       await loadSuggestions(user.id, allCategories, topicsData);
-    }
-
-    if (topicsData.length > 0) {
-      const matchIds = topicsData.filter((t: Topic) => t.match_id).map((t: Topic) => t.match_id);
-      if (matchIds.length > 0) {
-        const { data: unread } = await supabase
-          .from("messages")
-          .select("match_id")
-          .in("match_id", matchIds)
-          .neq("sender_id", user.id)
-          .eq("read", false);
-        const counts: Record<string, number> = {};
-        (unread || []).forEach((m: { match_id: string }) => {
-          counts[m.match_id] = (counts[m.match_id] || 0) + 1;
-        });
-        setUnreadCounts(counts);
-      }
+      await loadDailyResource(user.id, allCategories);
     }
   }
 
   async function loadSuggestions(userId: string, categories: string[], myTopics: Topic[]) {
-    // Get already matched user IDs
-    const matchedUserIds = new Set(myTopics.map((t: Topic) => t.user_id));
+    const matchedUserIds = new Set(myTopics.filter((t: Topic) => t.matched_with).map((t: Topic) => t.user_id));
     matchedUserIds.add(userId);
 
-    // Find other users with overlapping categories
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, experience_categories, description, user_id")
+      .select("id, full_name, experience_categories, user_id")
       .filter("experience_categories", "ov", `{${categories.join(",")}}`)
       .neq("user_id", userId)
       .limit(10);
 
     if (!data) return;
 
-    // Filter out already matched users
-    const filtered = data.filter((p: Suggestion) => !matchedUserIds.has(p.user_id));
-
-    // Deduplicate by user_id
-    const seen = new Set<string>();
-    const unique = filtered.filter((p: Suggestion) => {
-      if (seen.has(p.user_id)) return false;
-      seen.add(p.user_id);
+    const seenUsers = new Set<string>();
+    const unique = data.filter((p: Suggestion) => {
+      if (seenUsers.has(p.user_id) || matchedUserIds.has(p.user_id)) return false;
+      seenUsers.add(p.user_id);
       return true;
     });
 
@@ -204,7 +206,6 @@ export default function DashboardPage() {
     setConnecting(suggestion.user_id);
 
     try {
-      // Get current user's profile
       const { data: myProfile } = await supabase
         .from("profiles")
         .select("id, full_name")
@@ -216,14 +217,12 @@ export default function DashboardPage() {
 
       const matchId = `${myProfile.id}-${suggestion.id}`;
 
-      // Update current user
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
         matched_with: suggestion.full_name,
         match_id: matchId,
       }).eq("id", myProfile.id);
 
-      // Update the other user
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
         matched_with: myProfile.full_name,
@@ -269,22 +268,7 @@ export default function DashboardPage() {
   }
 
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
-
-  const groupedCategories: GroupedCategory[] = [];
-  const seen = new Map<string, GroupedCategory>();
-  topics.forEach((topic) => {
-    const key = topic.experience_categories.join(",");
-    if (!seen.has(key)) {
-      const group: GroupedCategory = { category: topic.experience_categories[0] || "General", topics: [], matches: [], unmatched: [] };
-      seen.set(key, group);
-      groupedCategories.push(group);
-    }
-    const group = seen.get(key)!;
-    group.topics.push(topic);
-    if (topic.matched_with) group.matches.push(topic);
-    else group.unmatched.push(topic);
-  });
-
+  const unmatchedTopics = topics.filter(t => !t.matched_with);
   const aiHref = topics.length > 0 ? `/ai-chat/${topics[0].id}` : "/get-started";
 
   const navItems = [
@@ -334,88 +318,119 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-10">
 
-            {/* Your spaces */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your spaces</h2>
-                <Link href="/get-started" className="text-xs" style={{ color: c.sage }}>+ New space</Link>
-              </div>
-              {groupedCategories.length === 0 ? (
-                <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                  <p className="text-sm mb-4" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
-                  <Link href="/get-started" className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white" style={{ backgroundColor: c.sage }}>Begin</Link>
+            {/* Your matches — one card per person */}
+            {matchedPeople.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold" style={{ color: c.ink }}>Your matches</h2>
+                  <Link href="/get-started" className="text-xs" style={{ color: c.sage }}>+ Add space</Link>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {groupedCategories.map((group, i) => (
-                    <div key={i} className="rounded-2xl border p-4" style={{ backgroundColor: c.card, borderColor: c.border }}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <CategoryIcon category={group.topics[0].experience_categories[0]} />
+                <div className="space-y-3">
+                  {matchedPeople.map((person, i) => (
+                    <div key={i} className="rounded-2xl border p-5"
+                      style={{ backgroundColor: c.card, borderColor: c.border }}>
+                      <div className="flex items-center gap-3 mb-4">
+                        <Avatar name={person.name} size={44} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm leading-snug" style={{ color: c.ink }}>
-                            {group.topics[0].experience_categories[0]}
+                          <p className="font-semibold text-base" style={{ color: c.ink }}>{person.name}</p>
+                          <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
+                            <span className="inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle" style={{ backgroundColor: c.green }} />
+                            Connected
                           </p>
-                          {group.matches.length > 0 ? (
-                            <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
-                              <span className="inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle" style={{ backgroundColor: c.green }} />
-                              Matched with {group.matches[0].matched_with}
-                            </p>
-                          ) : (
-                            <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
-                              <span className="inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle" style={{ backgroundColor: c.apricot }} />
-                              Finding your match
-                            </p>
-                          )}
                         </div>
+                        {person.unread > 0 && (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white text-xs font-bold"
+                            style={{ backgroundColor: c.apricot }}>
+                            {person.unread}
+                          </span>
+                        )}
                       </div>
-                      {group.matches.length > 0 && group.matches[0].match_id ? (
-                        <Link href={`/chat/${group.matches[0].match_id}`}
-                          className="w-full inline-flex items-center justify-center gap-2 rounded-full py-2 text-xs font-medium"
-                          style={{ backgroundColor: c.sageLight, color: c.sage }}>
-                          Spend time together →
-                          {unreadCounts[group.matches[0].match_id!] > 0 && (
-                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-white font-bold"
-                              style={{ backgroundColor: c.apricot, fontSize: 11 }}>
-                              {unreadCounts[group.matches[0].match_id!]}
-                            </span>
-                          )}
-                        </Link>
-                      ) : (
-                        <Link href={`/ai-chat/${group.topics[0].id}`}
-                          className="w-full inline-flex items-center justify-center rounded-full py-2 text-xs font-medium"
-                          style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
-                          Reflect quietly for now →
-                        </Link>
-                      )}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {Array.from(new Set(person.topics)).map((topic, j) => (
+                          <span key={j} className="rounded-full px-2.5 py-1 text-xs"
+                            style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                      <Link href={`/chat/${person.match_id}`}
+                        className="w-full inline-flex items-center justify-center rounded-full py-2.5 text-sm font-medium text-white"
+                        style={{ backgroundColor: c.sage }}>
+                        Say hello →
+                      </Link>
                     </div>
                   ))}
                 </div>
-              )}
-            </section>
+              </section>
+            )}
+
+            {/* Unmatched spaces */}
+            {unmatchedTopics.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold" style={{ color: c.ink }}>
+                    {matchedPeople.length > 0 ? "Still finding matches" : "Your spaces"}
+                  </h2>
+                  <Link href="/get-started" className="text-xs" style={{ color: c.sage }}>+ New</Link>
+                </div>
+                <div className="space-y-2">
+                  {unmatchedTopics.map((topic, i) => (
+                    <div key={i} className="rounded-2xl border px-4 py-3 flex items-center gap-3"
+                      style={{ backgroundColor: c.card, borderColor: c.border }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium" style={{ color: c.ink }}>
+                          {topic.experience_categories[0]}
+                        </p>
+                        <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: c.inkMuted }}>
+                          <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: c.apricot }} />
+                          Finding your match
+                        </p>
+                      </div>
+                      <Link href={`/ai-chat/${topic.id}`}
+                        className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium"
+                        style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
+                        Reflect →
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty state */}
+            {matchedPeople.length === 0 && unmatchedTopics.length === 0 && (
+              <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                <p className="text-sm mb-4" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
+                <Link href="/get-started"
+                  className="inline-flex h-9 items-center justify-center rounded-full px-6 text-sm font-medium text-white"
+                  style={{ backgroundColor: c.sage }}>
+                  Begin
+                </Link>
+              </div>
+            )}
 
             {/* People you may connect with */}
             {suggestions.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold" style={{ color: c.ink }}>People you may connect with</h2>
-                </div>
+                <h2 className="text-sm font-semibold mb-4" style={{ color: c.ink }}>People you may connect with</h2>
                 <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
                   {suggestions.map((suggestion, i) => (
                     <div key={suggestion.id}
                       className={`flex items-center gap-4 px-5 py-4 ${i < suggestions.length - 1 ? "border-b" : ""}`}
                       style={{ borderColor: c.border }}>
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-                        style={{ backgroundColor: c.sage }}>
-                        {suggestion.full_name.charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar name={suggestion.full_name} size={40} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium" style={{ color: c.ink }}>{suggestion.full_name.split(" ")[0]}</p>
-                        <p className="text-xs" style={{ color: c.inkMuted }}>{suggestion.experience_categories[0]}</p>
+                        <p className="text-sm font-medium" style={{ color: c.ink }}>
+                          {suggestion.full_name.split(" ")[0]}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
+                          {suggestion.experience_categories.slice(0, 2).join(" · ")}
+                        </p>
                       </div>
                       <button
                         onClick={() => sayHello(suggestion)}
                         disabled={connecting === suggestion.user_id}
-                        className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                        className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium disabled:opacity-40"
                         style={{ backgroundColor: c.sageLight, color: c.sage }}>
                         {connecting === suggestion.user_id ? "..." : "Say hello"}
                       </button>
@@ -430,16 +445,18 @@ export default function DashboardPage() {
               <section>
                 <h2 className="text-sm font-semibold mb-4" style={{ color: c.ink }}>Thoughtfully chosen for you</h2>
                 <a href={resource.link} target="_blank" rel="noopener noreferrer"
+                  onClick={() => markResourceSeen(resource.id)}
                   className="flex items-center gap-4 rounded-2xl border p-4 transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: c.card, borderColor: c.border }}
-                  onClick={() => markResourceSeen(resource.id)}>
+                  style={{ backgroundColor: c.card, borderColor: c.border }}>
                   <PodcastArtwork bg={resource.cover_bg} text={resource.cover_text || resource.title} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: c.inkMuted }}>Podcast</p>
                     <p className="font-semibold text-sm mb-1" style={{ color: c.ink }}>{resource.title}</p>
                     <p className="text-xs leading-relaxed" style={{ color: c.inkMuted }}>{resource.subtitle}</p>
                   </div>
-                  <span className="text-xs rounded-full px-3 py-1 shrink-0" style={{ backgroundColor: c.sageLight, color: c.sage }}>Listen →</span>
+                  <span className="text-xs rounded-full px-3 py-1 shrink-0" style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                    Listen →
+                  </span>
                 </a>
               </section>
             )}
@@ -457,10 +474,11 @@ export default function DashboardPage() {
               </Link>
             </section>
 
-            {/* AI — small and quiet */}
+            {/* AI */}
             <section>
               <Link href={aiHref} className="flex items-center gap-3 transition-opacity hover:opacity-70">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: c.sageLight }}>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: c.sageLight }}>
                   <span className="text-sm" style={{ color: c.sage }}>✦</span>
                 </div>
                 <div>
@@ -484,7 +502,7 @@ export default function DashboardPage() {
         {navItems.map((item) => (
           <Link key={item.label} href={item.href}
             className="flex flex-col items-center gap-0.5 px-2 py-1"
-            style={{ color: c.inkMuted }}>
+            style={{ color: c.inkMuted, textDecoration: "none" }}>
             <span className="text-lg">{item.icon}</span>
             <span className="text-xs">{item.label}</span>
           </Link>
