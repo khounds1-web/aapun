@@ -204,31 +204,33 @@ export default function DashboardPage() {
   async function sayHello(suggestion: Suggestion) {
     if (!user || connecting) return;
     setConnecting(suggestion.user_id);
-
+  
     try {
-      const { data: myProfile } = await supabase
+      // Get an unmatched profile for current user
+      const { data: myProfiles } = await supabase
         .from("profiles")
         .select("id, full_name")
         .eq("user_id", user.id)
-        .limit(1)
-        .single();
-
+        .is("match_id", null)
+        .limit(1);
+  
+      const myProfile = myProfiles?.[0];
       if (!myProfile) return;
-
+  
       const matchId = `${myProfile.id}-${suggestion.id}`;
-
+  
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
         matched_with: suggestion.full_name,
         match_id: matchId,
       }).eq("id", myProfile.id);
-
+  
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
         matched_with: myProfile.full_name,
         match_id: matchId,
       }).eq("id", suggestion.id);
-
+  
       router.push(`/chat/${matchId}`);
     } catch (err) {
       console.error("Error connecting:", err);
