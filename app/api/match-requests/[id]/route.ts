@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyMatch } from "@/app/get-started/actions";
 
-type RouteContext = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const { userId } = await auth();
@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "action must be accept or decline" }, { status: 400 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
