@@ -235,7 +235,7 @@ export default function GetStartedPage() {
   );
 }
 
-// ── Step 1: Experience categories ─────────────────────────────────────────────
+// ── Step 1: Experience categories (accordion) ────────────────────────────────
 
 function StepCategories({
   selected, onToggle, firstName,
@@ -244,45 +244,91 @@ function StepCategories({
   onToggle: (category: string) => void;
   firstName: string | null;
 }) {
+  const [openAreas, setOpenAreas] = useState<Set<string>>(new Set());
+
+  function toggleArea(areaKey: string) {
+    setOpenAreas((prev) => {
+      const next = new Set(prev);
+      if (next.has(areaKey)) next.delete(areaKey);
+      else next.add(areaKey);
+      return next;
+    });
+  }
+
+  const areas = Object.entries(EXPERIENCE_AREAS) as [string, { label: string; subcategories: readonly string[] }][];
+
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         {firstName ? `Hi ${firstName}, what's on your mind?` : "Hi, what's on your mind?"}
       </h1>
-      <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        Choose every experience that fits. This helps us connect you with someone who truly gets it.
+      <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
+        Open a topic and choose what fits. This is how we find someone who truly gets it.
       </p>
-      <div className="space-y-6">
-        {(Object.entries(EXPERIENCE_AREAS) as [string, { label: string; subcategories: readonly string[] }][]).map(
-          ([, area]) => (
-            <div key={area.label}>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest" style={{ color: c.inkMuted }}>
-                {area.label}
-              </p>
-              <fieldset>
-                <legend className="sr-only">{area.label}</legend>
-                <div className="flex flex-wrap gap-2.5">
-                  {area.subcategories.map((category) => {
-                    const isSelected = selected.has(category);
-                    return (
-                      <button key={category} type="button" aria-pressed={isSelected}
-                        onClick={() => onToggle(category)}
-                        className="rounded-full px-4 py-2.5 text-sm font-medium transition-all"
-                        style={isSelected
-                          ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
-                          : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-                        {category}
-                      </button>
-                    );
-                  })}
+
+      <div className="space-y-2">
+        {areas.map(([areaKey, area]) => {
+          const isOpen = openAreas.has(areaKey);
+          const selectedCount = area.subcategories.filter(s => selected.has(s)).length;
+
+          return (
+            <div key={areaKey} className="rounded-xl overflow-hidden"
+              style={{ borderWidth: 1, borderStyle: "solid", borderColor: isOpen ? c.sage + "66" : c.border }}>
+
+              {/* Area header — tap to expand/collapse */}
+              <button
+                type="button"
+                onClick={() => toggleArea(areaKey)}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors"
+                style={{ backgroundColor: isOpen ? c.sageLight : "#fff" }}
+                aria-expanded={isOpen}>
+                <div className="flex items-center gap-2.5">
+                  <span className="font-semibold text-sm" style={{ color: c.ink }}>
+                    {area.label}
+                  </span>
+                  {selectedCount > 0 && (
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: c.sage, color: "#fff", minWidth: 20 }}>
+                      {selectedCount}
+                    </span>
+                  )}
                 </div>
-              </fieldset>
+                <span className="text-sm transition-transform duration-200"
+                  style={{ color: c.inkMuted, display: "inline-block", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  ▾
+                </span>
+              </button>
+
+              {/* Subtopics — shown when expanded */}
+              {isOpen && (
+                <div className="px-4 pb-4 pt-3" style={{ borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: c.sage + "33" }}>
+                  <fieldset>
+                    <legend className="sr-only">{area.label} subtopics</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {area.subcategories.map((category) => {
+                        const isSelected = selected.has(category);
+                        return (
+                          <button key={category} type="button" aria-pressed={isSelected}
+                            onClick={() => onToggle(category)}
+                            className="rounded-full px-3.5 py-2 text-sm font-medium transition-all"
+                            style={isSelected
+                              ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
+                              : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+                            {category}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
             </div>
-          )
-        )}
+          );
+        })}
       </div>
+
       {selected.size > 0 && (
-        <p className="mt-6 text-sm" style={{ color: c.sage }}>
+        <p className="mt-5 text-sm" style={{ color: c.sage }}>
           {selected.size} selected — you can always update this later.
         </p>
       )}
