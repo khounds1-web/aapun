@@ -1,7 +1,10 @@
-export const TEMP_GET_STARTED_PROFILE_KEY = "aapun:get-started:draft-v1";
+// v2 — added username + journeyStage fields; old v1 drafts are intentionally ignored
+export const TEMP_GET_STARTED_PROFILE_KEY = "aapun:get-started:draft-v2";
 
 export type TempGetStartedProfile = {
   fullName: string;
+  username: string;
+  journeyStage: string;
   description: string;
   experienceCategories: string[];
   savedAt: string;
@@ -22,6 +25,8 @@ function isTempProfile(value: unknown): value is TempGetStartedProfile {
   const v = value as Record<string, unknown>;
   return (
     typeof v.fullName === "string" &&
+    typeof v.username === "string" &&
+    typeof v.journeyStage === "string" &&
     typeof v.description === "string" &&
     Array.isArray(v.experienceCategories) &&
     v.experienceCategories.every((x) => typeof x === "string") &&

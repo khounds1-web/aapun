@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { MatchProposalCard } from "@/app/components/match-proposal-card";
+import type { MatchRequest } from "@/lib/match-request";
 
 const c = {
   bg: "#f5f3f8",
@@ -23,6 +25,7 @@ const c = {
 type Topic = {
   id: string;
   full_name: string;
+  username: string | null;
   description: string;
   experience_categories: string[];
   created_at: string;
@@ -51,8 +54,18 @@ type MatchedPerson = {
 type Suggestion = {
   id: string;
   full_name: string;
+  username: string | null;
   experience_categories: string[];
   user_id: string;
+};
+
+type MatchRequestWithProfile = MatchRequest & {
+  from_profile: {
+    username: string | null;
+    full_name: string;
+    description: string;
+    experience_categories: string[];
+  };
 };
 
 function getGreeting() {
@@ -100,6 +113,7 @@ export default function DashboardPage() {
   const [resource, setResource] = useState<Resource | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [matchedPeople, setMatchedPeople] = useState<MatchedPerson[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<MatchRequestWithProfile[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
 
   const supabase = createClient(
@@ -127,7 +141,7 @@ export default function DashboardPage() {
     setTopics(topicsData);
     setLoading(false);
 
-    // Group matches by person
+    // Group existing direct matches by person
     const matchMap = new Map<string, MatchedPerson>();
     const matchIds: string[] = [];
 
@@ -167,6 +181,18 @@ export default function DashboardPage() {
 
     setMatchedPeople(Array.from(matchMap.values()));
 
+    // Load pending match requests for this user
+    const { data: pendingData } = await supabase
+      .from("match_requests")
+      .select(`*, from_profile:profiles!from_profile_id(username, full_name, description, experience_categories)`)
+      .eq("to_user_id", user.id)
+      .eq("status", "pending");
+
+    const validPending = (pendingData || []).filter(
+      (r: MatchRequestWithProfile) => r.from_profile != null
+    );
+    setPendingRequests(validPending);
+
     // Load suggestions and resources
     const allCategories = Array.from(
       new Set(topicsData.flatMap((t: Topic) => t.experience_categories))
@@ -184,7 +210,7 @@ export default function DashboardPage() {
 
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, experience_categories, user_id")
+      .select("id, full_name, username, experience_categories, user_id")
       .filter("experience_categories", "ov", `{${categories.join(",")}}`)
       .neq("user_id", userId)
       .limit(10);
@@ -204,33 +230,39 @@ export default function DashboardPage() {
   async function sayHello(suggestion: Suggestion) {
     if (!user || connecting) return;
     setConnecting(suggestion.user_id);
-  
+
     try {
-      // Get an unmatched profile for current user
+      // Get an unmatched profile for current user (include username for display)
       const { data: myProfiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, username")
         .eq("user_id", user.id)
         .is("match_id", null)
         .limit(1);
-  
+
       const myProfile = myProfiles?.[0];
       if (!myProfile) return;
-  
+
       const matchId = `${myProfile.id}-${suggestion.id}`;
-  
+
+      // Display names use username where available
+      const myDisplayName = (myProfile.username as string | null) ?? myProfile.full_name.split(" ")[0];
+      const theirDisplayName = suggestion.username ?? suggestion.full_name.split(" ")[0];
+
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
-        matched_with: suggestion.full_name,
+        matched_with: theirDisplayName,
+        matched_user_id: suggestion.user_id,
         match_id: matchId,
       }).eq("id", myProfile.id);
-  
+
       await supabase.from("profiles").update({
         match_status: "We found you a match!",
-        matched_with: myProfile.full_name,
+        matched_with: myDisplayName,
+        matched_user_id: user.id,
         match_id: matchId,
       }).eq("id", suggestion.id);
-  
+
       router.push(`/chat/${matchId}`);
     } catch (err) {
       console.error("Error connecting:", err);
@@ -269,9 +301,24 @@ export default function DashboardPage() {
     await supabase.from("user_seen_resources").insert([{ user_id: user.id, resource_id: resourceId }]);
   }
 
+  // Accept a match proposal → navigate to chat
+  function handleProposalAccept(_id: string, matchId: string) {
+    router.push(`/chat/${matchId}`);
+  }
+
+  // Decline a match proposal → remove card from list
+  function handleProposalDecline(id: string) {
+    setPendingRequests((prev) => prev.filter((r) => r.id !== id));
+  }
+
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
   const unmatchedTopics = topics.filter(t => !t.matched_with);
   const aiHref = topics.length > 0 ? `/ai-chat/${topics[0].id}` : "/get-started";
+
+  // All experience categories this user has selected (for shared category display)
+  const myAllCategories = Array.from(
+    new Set(topics.flatMap((t: Topic) => t.experience_categories))
+  );
 
   const navItems = [
     { label: "Home", href: "/dashboard", icon: "🏠" },
@@ -311,7 +358,7 @@ export default function DashboardPage() {
             {getGreeting()} {firstName}
           </h1>
           <p className="text-sm" style={{ color: c.inkMuted }}>
-    
+
           </p>
         </div>
 
@@ -320,7 +367,33 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-10">
 
-            {/* Your matches — one card per person */}
+            {/* ── Match Proposals — pending incoming requests ── */}
+            {pendingRequests.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold" style={{ color: c.ink }}>
+                    Someone wants to connect
+                  </h2>
+                  <span className="text-xs rounded-full px-2.5 py-1 font-medium"
+                    style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
+                    {pendingRequests.length} pending
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {pendingRequests.map((req) => (
+                    <MatchProposalCard
+                      key={req.id}
+                      request={req}
+                      currentUserCategories={myAllCategories}
+                      onAccept={handleProposalAccept}
+                      onDecline={handleProposalDecline}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Your matches — direct/accepted connections ── */}
             {matchedPeople.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
@@ -400,7 +473,7 @@ export default function DashboardPage() {
             )}
 
             {/* Empty state */}
-            {matchedPeople.length === 0 && unmatchedTopics.length === 0 && (
+            {matchedPeople.length === 0 && unmatchedTopics.length === 0 && pendingRequests.length === 0 && (
               <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
                 <p className="text-sm mb-4" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
                 <Link href="/get-started"
@@ -420,10 +493,10 @@ export default function DashboardPage() {
                     <div key={suggestion.id}
                       className={`flex items-center gap-4 px-5 py-4 ${i < suggestions.length - 1 ? "border-b" : ""}`}
                       style={{ borderColor: c.border }}>
-                      <Avatar name={suggestion.full_name} size={40} />
+                      <Avatar name={suggestion.username ?? suggestion.full_name} size={40} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium" style={{ color: c.ink }}>
-                          {suggestion.full_name.split(" ")[0]}
+                          {suggestion.username ?? suggestion.full_name.split(" ")[0]}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: c.inkMuted }}>
                           {suggestion.experience_categories.slice(0, 2).join(" · ")}

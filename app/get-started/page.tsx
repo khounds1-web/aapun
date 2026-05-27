@@ -1,6 +1,7 @@
 "use client";
 
 import { saveProfile } from "@/app/get-started/actions";
+import { EXPERIENCE_AREAS, JOURNEY_STAGES } from "@/app/get-started/categories";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -21,26 +22,6 @@ const c = {
   border: "#ddd6f0",
 } as const;
 
-const EXPERIENCE_CATEGORIES = [
-  "Planning to conceive soon",
-  "First-time parents",
-  "Breastfeeding/Pumping/Formula feeding",
-  "Postpartum depression/anxiety",
-  "NICU parents",
-  "IVF",
-  "Immigrant parents",
-  "Single parents",
-  "Co-parenting after divorce",
-  "Stay-at-home moms/dads",
-  "Balancing careers and parenting",
-  "Parents of neurodivergent children",
-  "Parents of autistic children",
-  "Pregnancy loss & miscarriage",
-  "Parenting with a partner who doesn't share the load",
-  "Hiring a nanny/caregiver",
-  "Other"
-] as const;
-
 const DESCRIPTION_MAX = 500;
 
 export default function GetStartedPage() {
@@ -50,12 +31,13 @@ export default function GetStartedPage() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   const [categories, setCategories] = useState<Set<string>>(new Set());
+  const [journeyStage, setJourneyStage] = useState("");
   const [description, setDescription] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [confirmedAdult, setConfirmedAdult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   useEffect(() => {
     if (!isLoaded || !user) {
@@ -70,7 +52,7 @@ export default function GetStartedPage() {
 
     supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, username")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -82,8 +64,9 @@ export default function GetStartedPage() {
       });
   }, [isLoaded, user]);
 
+  // Returning users skip the username step (step 4)
   const isReturning = existingName !== null;
-  const TOTAL_STEPS = isReturning ? 2 : 3;
+  const TOTAL_STEPS = isReturning ? 3 : 4;
 
   function toggleCategory(category: string) {
     setCategories((prev) => {
@@ -95,11 +78,11 @@ export default function GetStartedPage() {
   }
 
   function goNext() {
-    if (step < TOTAL_STEPS) setStep((step + 1) as 1 | 2 | 3);
+    if (step < TOTAL_STEPS) setStep((step + 1) as 1 | 2 | 3 | 4);
   }
 
   function goBack() {
-    if (step > 1) setStep((step - 1) as 1 | 2 | 3);
+    if (step > 1) setStep((step - 1) as 1 | 2 | 3 | 4);
   }
 
   async function handleSubmit() {
@@ -107,11 +90,14 @@ export default function GetStartedPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const nameToUse = isReturning ? existingName! : fullName.trim();
+    // Returning users keep their existing name; new users supply a username
+    const nameToUse = isReturning ? existingName! : username.trim();
 
     try {
       const result = await saveProfile({
         fullName: nameToUse,
+        username: username.trim() || undefined,
+        journeyStage: journeyStage || undefined,
         description: description.trim(),
         experienceCategories: Array.from(categories),
       });
@@ -132,8 +118,9 @@ export default function GetStartedPage() {
 
   const canContinue =
     (step === 1 && categories.size > 0) ||
-    (step === 2) ||
-    (step === 3 && fullName.trim().length >= 2 && confirmedAdult);
+    (step === 2 && journeyStage !== "") ||
+    step === 3 || // description is optional
+    (step === 4 && username.trim().length >= 2 && confirmedAdult);
 
   const progress = (step / TOTAL_STEPS) * 100;
 
@@ -189,10 +176,26 @@ export default function GetStartedPage() {
         <div className="flex flex-1 flex-col rounded-2xl p-6 shadow-sm backdrop-blur-sm sm:p-8"
           style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
 
-          {step === 1 && <StepCategories selected={categories} onToggle={toggleCategory} firstName={existingName?.split(" ")[0] || null} />}
-          {step === 2 && <StepDescription value={description} onChange={setDescription} maxLength={DESCRIPTION_MAX} />}
-          {step === 3 && !isReturning && (
-            <StepName value={fullName} onChange={setFullName} confirmedAdult={confirmedAdult} onConfirmedAdultChange={setConfirmedAdult} />
+          {step === 1 && (
+            <StepCategories
+              selected={categories}
+              onToggle={toggleCategory}
+              firstName={existingName?.split(" ")[0] || null}
+            />
+          )}
+          {step === 2 && (
+            <StepJourneyStage value={journeyStage} onChange={setJourneyStage} />
+          )}
+          {step === 3 && (
+            <StepDescription value={description} onChange={setDescription} maxLength={DESCRIPTION_MAX} />
+          )}
+          {step === 4 && !isReturning && (
+            <StepUsername
+              value={username}
+              onChange={setUsername}
+              confirmedAdult={confirmedAdult}
+              onConfirmedAdultChange={setConfirmedAdult}
+            />
           )}
 
           {submitError && (
@@ -232,6 +235,8 @@ export default function GetStartedPage() {
   );
 }
 
+// ── Step 1: Experience categories ─────────────────────────────────────────────
+
 function StepCategories({
   selected, onToggle, firstName,
 }: {
@@ -247,23 +252,35 @@ function StepCategories({
       <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
         Choose every experience that fits. This helps us connect you with someone who truly gets it.
       </p>
-      <fieldset>
-        <legend className="sr-only">Experiences</legend>
-        <div className="flex flex-wrap gap-2.5">
-          {EXPERIENCE_CATEGORIES.map((category) => {
-            const isSelected = selected.has(category);
-            return (
-              <button key={category} type="button" aria-pressed={isSelected} onClick={() => onToggle(category)}
-                className="rounded-full px-4 py-2.5 text-sm font-medium transition-all"
-                style={isSelected
-                  ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
-                  : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-                {category}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
+      <div className="space-y-6">
+        {(Object.entries(EXPERIENCE_AREAS) as [string, { label: string; subcategories: readonly string[] }][]).map(
+          ([, area]) => (
+            <div key={area.label}>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest" style={{ color: c.inkMuted }}>
+                {area.label}
+              </p>
+              <fieldset>
+                <legend className="sr-only">{area.label}</legend>
+                <div className="flex flex-wrap gap-2.5">
+                  {area.subcategories.map((category) => {
+                    const isSelected = selected.has(category);
+                    return (
+                      <button key={category} type="button" aria-pressed={isSelected}
+                        onClick={() => onToggle(category)}
+                        className="rounded-full px-4 py-2.5 text-sm font-medium transition-all"
+                        style={isSelected
+                          ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
+                          : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+                        {category}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            </div>
+          )
+        )}
+      </div>
       {selected.size > 0 && (
         <p className="mt-6 text-sm" style={{ color: c.sage }}>
           {selected.size} selected — you can always update this later.
@@ -272,6 +289,43 @@ function StepCategories({
     </div>
   );
 }
+
+// ── Step 2: Journey stage ─────────────────────────────────────────────────────
+
+function StepJourneyStage({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+        Where are you in your journey?
+      </h1>
+      <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
+        This helps us find someone at a similar stage — not too far ahead, not too far behind.
+      </p>
+      <div className="space-y-3" role="radiogroup" aria-label="Journey stage">
+        {JOURNEY_STAGES.map((stage) => {
+          const isSelected = value === stage.value;
+          return (
+            <button key={stage.value} type="button" role="radio" aria-checked={isSelected}
+              onClick={() => onChange(stage.value)}
+              className="w-full rounded-xl px-5 py-4 text-left transition-all"
+              style={isSelected
+                ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(107,91,158,0.3)" }
+                : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+              <p className="font-semibold text-sm" style={{ color: isSelected ? "#fff" : c.ink }}>
+                {stage.label}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : c.inkMuted }}>
+                {stage.sub}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 3: Description ───────────────────────────────────────────────────────
 
 function StepDescription({ value, onChange, maxLength }: { value: string; onChange: (value: string) => void; maxLength: number }) {
   const remaining = maxLength - value.length;
@@ -299,7 +353,9 @@ function StepDescription({ value, onChange, maxLength }: { value: string; onChan
   );
 }
 
-function StepName({ value, onChange, confirmedAdult, onConfirmedAdultChange }: {
+// ── Step 4: Username + adult confirm (new users only) ────────────────────────
+
+function StepUsername({ value, onChange, confirmedAdult, onConfirmedAdultChange }: {
   value: string; onChange: (value: string) => void;
   confirmedAdult: boolean; onConfirmedAdultChange: (value: boolean) => void;
 }) {
@@ -309,11 +365,13 @@ function StepName({ value, onChange, confirmedAdult, onConfirmedAdultChange }: {
         What should we call you?
       </h1>
       <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-        Aapun is built on real people and real names. Please use the name you'd like others to know you by.
+        This is what your match will see — not your full name. Use a first name, nickname, or anything you're comfortable with.
       </p>
-      <label htmlFor="full-name" className="mb-2 block text-sm font-medium" style={{ color: c.ink }}>Full name</label>
-      <input id="full-name" type="text" autoComplete="name" value={value}
-        onChange={(e) => onChange(e.target.value)} placeholder="Your full name"
+      <label htmlFor="username" className="mb-2 block text-sm font-medium" style={{ color: c.ink }}>
+        Your name on Aapun
+      </label>
+      <input id="username" type="text" autoComplete="nickname" value={value}
+        onChange={(e) => onChange(e.target.value)} placeholder="First name or chosen name"
         className="mb-4 w-full rounded-xl px-4 py-3 text-base outline-none transition-shadow focus:ring-2"
         style={{ color: c.ink, backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }} />
       <div className="mb-6">
@@ -337,6 +395,8 @@ function StepName({ value, onChange, confirmedAdult, onConfirmedAdultChange }: {
     </div>
   );
 }
+
+// ── Decorative components ─────────────────────────────────────────────────────
 
 function AmbientBackground() {
   return (

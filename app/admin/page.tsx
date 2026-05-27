@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { notifyMatch } from "@/app/get-started/actions";
-
-const ADMIN_PASSWORD = "Ontosomething";
+import { checkAdminAccess, loadAdminProfiles } from "./actions";
 
 const c = {
   bg: "#f6f4ef",
@@ -34,9 +33,7 @@ type Profile = {
 };
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState(false);
+  const [authStatus, setAuthStatus] = useState<"loading" | "authorized" | "denied">("loading");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedA, setSelectedA] = useState<Profile | null>(null);
@@ -45,25 +42,20 @@ export default function AdminPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [rematching, setRematching] = useState(false);
 
-  function handleLogin() {
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      loadProfiles();
-    } else {
-      setPasswordError(true);
-    }
-  }
+  useEffect(() => {
+    checkAdminAccess().then((ok) => {
+      if (ok) {
+        setAuthStatus("authorized");
+        loadProfiles();
+      } else {
+        setAuthStatus("denied");
+      }
+    });
+  }, []);
 
   async function loadProfiles() {
     setLoading(true);
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await loadAdminProfiles();
     if (error) console.error(error);
     setProfiles(data || []);
     setLoading(false);
@@ -107,28 +99,18 @@ export default function AdminPage() {
     loadProfiles();
   }
 
-  if (!authenticated) {
+  if (authStatus === "loading") {
     return (
       <div className="flex min-h-full items-center justify-center font-sans" style={{ backgroundColor: c.bg }}>
-        <div className="w-full max-w-sm rounded-2xl p-8 shadow-sm"
-          style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-          <h1 className="mb-6 text-xl font-semibold" style={{ color: c.ink }}>Admin access</h1>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setPasswordError(false); }}
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            placeholder="Password"
-            className="mb-3 w-full rounded-xl px-4 py-3 text-base outline-none"
-            style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: passwordError ? c.apricot : c.border, color: c.ink }}
-          />
-          {passwordError && <p className="mb-3 text-sm" style={{ color: c.apricot }}>Incorrect password</p>}
-          <button onClick={handleLogin}
-            className="w-full rounded-full py-3 text-sm font-medium text-white"
-            style={{ backgroundColor: c.sage }}>
-            Enter
-          </button>
-        </div>
+        <p className="text-sm" style={{ color: c.inkMuted }}>Checking access…</p>
+      </div>
+    );
+  }
+
+  if (authStatus === "denied") {
+    return (
+      <div className="flex min-h-full items-center justify-center font-sans" style={{ backgroundColor: c.bg }}>
+        <p className="text-sm" style={{ color: c.apricot }}>Not authorized.</p>
       </div>
     );
   }

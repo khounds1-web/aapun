@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { auth } from "@clerk/nextjs/server";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { categoriesA, categoriesB, descriptionA, descriptionB } = await req.json();
 
@@ -37,17 +43,19 @@ Example format: ["What's been your biggest surprise so far?", "How are you reall
       ],
     });
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "[]";
-    const prompts = JSON.parse(text.replace(/```json|```/g, "").trim());
+    const text = response.content[0].type === "text" ? response.content[0].text : "";
+    let prompts: string[] = [];
+    try {
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string")) {
+        prompts = parsed;
+      }
+    } catch {
+      // malformed LLM output — return empty, UI handles gracefully
+    }
     return NextResponse.json({ prompts });
   } catch (err) {
     console.error("Chat prompts API error:", err);
-    return NextResponse.json({
-      prompts: [
-        "How are you really doing these days?",
-        "What's been the hardest part for you?",
-        "What do you wish someone had told you earlier?",
-      ]
-    });
+    return NextResponse.json({ prompts: [] });
   }
 }

@@ -7,6 +7,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function saveProfile(data: {
   fullName: string;
+  username?: string;
+  journeyStage?: string;
   description: string;
   experienceCategories: string[];
 }) {
@@ -29,6 +31,8 @@ export async function saveProfile(data: {
     .insert({
       user_id: userId,
       full_name: data.fullName,
+      username: data.username?.trim() || null,
+      journey_stage: data.journeyStage?.trim() || null,
       email: email,
       description: data.description,
       experience_categories: data.experienceCategories,
@@ -76,74 +80,88 @@ async function autoMatch(
   newUserEmail: string,
   categories: string[]
 ) {
-  // Find all profiles with overlapping categories, different user
+  // Find unmatched profiles with overlapping categories, different user
   const { data: potentialMatches } = await supabase
     .from("profiles")
     .select("*")
     .neq("user_id", newProfile.user_id)
+    .is("match_id", null)
     .filter("experience_categories", "ov", `{${categories.join(",")}}`);
 
   if (!potentialMatches || potentialMatches.length === 0) return;
 
-  // Track which user_ids we've already matched with in this run
+  // Track which user_ids we've already sent requests to in this run
   const matchedUserIds = new Set<string>();
 
   for (const match of potentialMatches) {
     // Skip same user (different profiles of same person)
     if (match.user_id === newProfile.user_id) continue;
 
-    // Skip if already matched this user in this run
+    // Skip if already processed this user in this run
     if (matchedUserIds.has(match.user_id)) continue;
 
-    // Skip if already matched with this user_id previously
-    const { data: existingMatch } = await supabase
+    // Skip if already directly matched with this user_id previously
+    const { data: existingDirectMatch } = await supabase
       .from("profiles")
       .select("id")
       .eq("user_id", newProfile.user_id)
       .eq("matched_user_id", match.user_id)
       .limit(1);
 
-    if (existingMatch && existingMatch.length > 0) continue;
+    if (existingDirectMatch && existingDirectMatch.length > 0) continue;
+
+    // Skip if there's already a pending/accepted match_request between these profiles (either direction)
+    const { data: existingReqA } = await supabase
+      .from("match_requests")
+      .select("id")
+      .eq("from_profile_id", newProfile.id)
+      .eq("to_profile_id", match.id)
+      .in("status", ["pending", "accepted"])
+      .limit(1);
+
+    if (existingReqA && existingReqA.length > 0) continue;
+
+    const { data: existingReqB } = await supabase
+      .from("match_requests")
+      .select("id")
+      .eq("from_profile_id", match.id)
+      .eq("to_profile_id", newProfile.id)
+      .in("status", ["pending", "accepted"])
+      .limit(1);
+
+    if (existingReqB && existingReqB.length > 0) continue;
 
     matchedUserIds.add(match.user_id);
 
-    const matchId = `${newProfile.id}-${match.id}`;
+    // Create a pending match request — accept/decline happens on the dashboard
+    const { error: insertError } = await supabase
+      .from("match_requests")
+      .insert({
+        from_profile_id: newProfile.id,
+        to_profile_id: match.id,
+        from_user_id: newProfile.user_id,
+        to_user_id: match.user_id,
+        status: "pending",
+      });
 
-    // Update new user's profile
-    await supabase
-      .from("profiles")
-      .update({
-        match_status: "We found you a match!",
-        matched_with: match.full_name,
-        matched_user_id: match.user_id,
-        match_id: matchId,
-      })
-      .eq("id", newProfile.id);
+    if (insertError) {
+      console.error("Failed to create match request:", insertError);
+      continue;
+    }
 
-    // Update matched user's profile
-    await supabase
-      .from("profiles")
-      .update({
-        match_status: "We found you a match!",
-        matched_with: newUserName,
-        matched_user_id: newProfile.user_id,
-        match_id: matchId,
-      })
-      .eq("id", match.id);
-
-    // Notify both
+    // Notify both: "potential match found — check your dashboard"
     try {
       if (newUserEmail) {
         await resend.emails.send({
           from: "onboarding@resend.dev",
           to: newUserEmail,
-          subject: "You've been matched on Aapun! 🎉",
+          subject: "We found a potential match for you on Aapun 👋",
           html: `
-            <h2>Great news, ${newUserName}!</h2>
-            <p>We've matched you with <strong>${match.full_name}</strong> — someone who shares similar experiences.</p>
-            <p>Log in to say hi!</p>
+            <h2>Hi ${newUserName},</h2>
+            <p>We've found someone who may connect with you on Aapun.</p>
+            <p>Head to your dashboard to accept or decline — it only takes a second.</p>
             <br/>
-            <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
+            <p><a href="https://aapun.vercel.app/dashboard">View on your dashboard →</a></p>
             <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with people who get it.</p>
           `,
         });
@@ -152,19 +170,19 @@ async function autoMatch(
         await resend.emails.send({
           from: "onboarding@resend.dev",
           to: match.email,
-          subject: "You've been matched on Aapun! 🎉",
+          subject: "Someone may want to connect with you on Aapun 👋",
           html: `
-            <h2>Great news, ${match.full_name}!</h2>
-            <p>We've matched you with <strong>${newUserName}</strong> — someone who shares similar experiences.</p>
-            <p>Log in to say hi!</p>
+            <h2>Hi ${match.username ?? match.full_name},</h2>
+            <p>Someone on Aapun has been matched with you based on shared experiences.</p>
+            <p>Head to your dashboard to accept or decline.</p>
             <br/>
-            <p><a href="https://aapun.vercel.app/dashboard">Go to your dashboard</a></p>
+            <p><a href="https://aapun.vercel.app/dashboard">View on your dashboard →</a></p>
             <p style="color:#6d8078;font-size:12px;">Aapun — real conversations with people who get it.</p>
           `,
         });
       }
     } catch (emailError) {
-      console.error("Match notification email failed:", emailError);
+      console.error("Match proposal email failed:", emailError);
     }
   }
 }
