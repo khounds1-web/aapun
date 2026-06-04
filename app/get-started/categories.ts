@@ -1,6 +1,6 @@
 export const EXPERIENCE_AREAS = {
   retirement: {
-    label: "Retirement / new chapter after work",
+    label: "Retirement & New Chapter After Work",
     subcategories: [
       "Just left my career",
       "Finding a new rhythm and routine",
@@ -12,7 +12,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   relocation: {
-    label: "Relocation / new community",
+    label: "Relocation & New Community",
     subcategories: [
       "Just moved somewhere new",
       "Thinking about where to live next",
@@ -23,7 +23,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   grandparenting: {
-    label: "Grandparenting journey",
+    label: "Grandparenting Journey",
     subcategories: [
       "New grandparent",
       "Long-distance grandparenting",
@@ -34,7 +34,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   learning: {
-    label: "Learning something new",
+    label: "Learning Something New",
     subcategories: [
       "Going back to school",
       "Learning a language",
@@ -45,7 +45,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   travel: {
-    label: "Travel / adventure",
+    label: "Travel & Adventure",
     subcategories: [
       "Solo travel",
       "Traveling with a partner",
@@ -67,7 +67,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   creative: {
-    label: "Creative pursuits",
+    label: "Creative Pursuits",
     subcategories: [
       "Writing and storytelling",
       "Visual arts and crafts",
@@ -78,7 +78,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   volunteering: {
-    label: "Volunteering / giving back",
+    label: "Volunteering & Giving Back",
     subcategories: [
       "Finding the right cause",
       "Using my skills to help others",
@@ -89,7 +89,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   encoreCareer: {
-    label: "Encore career / new work",
+    label: "Encore Career & New Work",
     subcategories: [
       "Starting a small business",
       "Consulting or freelancing",
@@ -100,7 +100,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   communityBuilding: {
-    label: "Community building / making friends",
+    label: "Community Building & Making Friends",
     subcategories: [
       "Making friends at this stage of life",
       "Feeling lonely or isolated",
