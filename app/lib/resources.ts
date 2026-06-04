@@ -291,6 +291,100 @@ export const RESOURCE_MAP: Record<string, Resource[]> = {
     },
   ],
 
+  // ── Relocation & New Community ────────────────────────────────────────────
+  "Just moved somewhere new": [
+    {
+      type: "read",
+      title: "The Life-Changing Magic of Tidying Up",
+      subtitle: "Marie Kondo — let go of what you don't need, make room for what's next",
+      link: "https://www.goodreads.com/book/show/22318578-the-life-changing-magic-of-tidying-up",
+      coverBg: "#d4e4d8",
+      coverText: "Magic\nof\nTidying\nUp",
+    },
+    {
+      type: "read",
+      title: "The Art of Friendship",
+      subtitle: "Roger Horchow & Sally Horchow — building connections in a new place",
+      link: "https://www.goodreads.com/book/show/292731.The_Art_of_Friendship",
+      coverBg: "#e8e2d4",
+      coverText: "The Art\nof\nFriend-\nship",
+    },
+  ],
+  "Downsizing and letting go": [
+    {
+      type: "read",
+      title: "Goodbye, Things",
+      subtitle: "Fumio Sasaki — a minimalist approach to a lighter life",
+      link: "https://www.goodreads.com/book/show/30231806-goodbye-things",
+      coverBg: "#ddd4e8",
+      coverText: "Good-\nbye,\nThings",
+    },
+    {
+      type: "read",
+      title: "The Life-Changing Magic of Tidying Up",
+      subtitle: "Marie Kondo",
+      link: "https://www.goodreads.com/book/show/22318578-the-life-changing-magic-of-tidying-up",
+      coverBg: "#d4e4d8",
+      coverText: "Magic\nof\nTidying\nUp",
+    },
+  ],
+
+  // ── Learning Something New ─────────────────────────────────────────────────
+  "Going back to school": [
+    {
+      type: "listen",
+      title: "Hidden Brain",
+      subtitle: "Shankar Vedantam — the science of how we think and learn",
+      link: "https://hiddenbrain.org",
+      coverBg: "#d4dce8",
+      coverText: "Hidden\nBrain",
+    },
+    {
+      type: "read",
+      title: "Mindshift",
+      subtitle: "Barbara Oakley — break through learning obstacles at any age",
+      link: "https://www.goodreads.com/book/show/31169560-mindshift",
+      coverBg: "#e8e2d4",
+      coverText: "Mind-\nshift",
+    },
+  ],
+  "Getting comfortable with technology": [
+    {
+      type: "listen",
+      title: "Hidden Brain",
+      subtitle: "Shankar Vedantam — understanding how your mind adapts",
+      link: "https://hiddenbrain.org",
+      coverBg: "#d4dce8",
+      coverText: "Hidden\nBrain",
+    },
+    {
+      type: "read",
+      title: "Keep Sharp",
+      subtitle: "Sanjay Gupta — how to build a better brain at any age",
+      link: "https://www.goodreads.com/book/show/52761380-keep-sharp",
+      coverBg: "#d4e4d8",
+      coverText: "Keep\nSharp",
+    },
+  ],
+  "Picking up a new skill or hobby": [
+    {
+      type: "listen",
+      title: "Ologies with Alie Ward",
+      subtitle: "A different subject every episode — for the endlessly curious",
+      link: "https://www.alieward.com/ologies",
+      coverBg: "#ddd4e8",
+      coverText: "Olo-\ngies",
+    },
+    {
+      type: "read",
+      title: "The Art of Learning",
+      subtitle: "Josh Waitzkin — the path to mastery at any stage of life",
+      link: "https://www.goodreads.com/book/show/857333.The_Art_of_Learning",
+      coverBg: "#e8e2d4",
+      coverText: "The Art\nof\nLearn-\ning",
+    },
+  ],
+
   // ── Volunteering & Giving Back ─────────────────────────────────────────────
   "Using my skills to help others": [
     {

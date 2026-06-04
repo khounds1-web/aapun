@@ -206,6 +206,74 @@ const resources = [
       },
     ],
   },
+  {
+    category: "Relocation & New Community",
+    podcasts: [
+      {
+        title: "Senior Nomads",
+        description:
+          "Michael and Debbie Campbell share what it's really like to uproot, move somewhere new, and build a life from scratch — at any age.",
+        link: "https://seniornomads.com",
+      },
+      {
+        title: "Stuff You Should Know",
+        description:
+          "Wide-ranging, curious conversations — great company while you're unpacking boxes and getting to know a new place.",
+        link: "https://www.iheart.com/podcast/105-stuff-you-should-know-26940277/",
+      },
+    ],
+    books: [
+      {
+        title: "The Life-Changing Magic of Tidying Up",
+        author: "Marie Kondo",
+      },
+      {
+        title: "Goodbye, Things",
+        author: "Fumio Sasaki",
+      },
+      {
+        title: "The Art of Friendship",
+        author: "Roger Horchow & Sally Horchow",
+      },
+    ],
+  },
+  {
+    category: "Learning Something New",
+    podcasts: [
+      {
+        title: "Hidden Brain",
+        description:
+          "NPR's Shankar Vedantam explores the unconscious patterns that drive human behaviour — endlessly fascinating, always accessible.",
+        link: "https://hiddenbrain.org",
+      },
+      {
+        title: "Ologies with Alie Ward",
+        description:
+          "A different science or field every episode, explained by the expert who loves it most. Perfect for the endlessly curious.",
+        link: "https://www.alieward.com/ologies",
+      },
+      {
+        title: "Radiolab",
+        description:
+          "Deep dives into science, philosophy and the big questions — stories that make you see the world differently.",
+        link: "https://radiolab.org",
+      },
+    ],
+    books: [
+      {
+        title: "Mindshift",
+        author: "Barbara Oakley",
+      },
+      {
+        title: "Keep Sharp",
+        author: "Sanjay Gupta",
+      },
+      {
+        title: "The Art of Learning",
+        author: "Josh Waitzkin",
+      },
+    ],
+  },
 ];
 
 export default function ResourcesPage() {
