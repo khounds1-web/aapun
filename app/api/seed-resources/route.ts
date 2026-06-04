@@ -12,11 +12,21 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // ── 1. Clear all existing resources ───────────────────────────────────────
+  // ── 1. Clear user_seen_resources first (foreign key dependency) ───────────
+  const { error: seenDeleteError } = await supabase
+    .from("user_seen_resources")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+
+  if (seenDeleteError) {
+    return NextResponse.json({ error: `user_seen_resources: ${seenDeleteError.message}` }, { status: 500 });
+  }
+
+  // ── 2. Now clear all existing resources ───────────────────────────────────
   const { error: deleteError } = await supabase
     .from("resources")
     .delete()
-    .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+    .neq("id", "00000000-0000-0000-0000-000000000000");
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
