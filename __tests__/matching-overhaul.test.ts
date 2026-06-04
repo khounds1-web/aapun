@@ -1,6 +1,6 @@
 /**
  * Matching Overhaul — Acceptance Criteria Tests
- * Slice 1: Tests-first. These must pass before the feature is considered complete.
+ * Slice 1 (Elder pivot): Tests-first. These must pass before the feature is considered complete.
  *
  * Run: npx jest __tests__/matching-overhaul.test.ts
  */
@@ -12,11 +12,21 @@ import type { Profile } from "@/lib/profile";
 // ── AC-01: Experience category architecture ────────────────────────────────
 
 describe("Experience category architecture", () => {
-  it("has exactly 3 top-level areas", () => {
-    expect(Object.keys(EXPERIENCE_AREAS)).toHaveLength(3);
-    expect(EXPERIENCE_AREAS).toHaveProperty("parenting");
-    expect(EXPERIENCE_AREAS).toHaveProperty("seriousIllness");
-    expect(EXPERIENCE_AREAS).toHaveProperty("lifeTransitions");
+  it("has exactly 10 top-level areas", () => {
+    expect(Object.keys(EXPERIENCE_AREAS)).toHaveLength(10);
+  });
+
+  it("has all expected area keys", () => {
+    expect(EXPERIENCE_AREAS).toHaveProperty("retirement");
+    expect(EXPERIENCE_AREAS).toHaveProperty("relocation");
+    expect(EXPERIENCE_AREAS).toHaveProperty("grandparenting");
+    expect(EXPERIENCE_AREAS).toHaveProperty("learning");
+    expect(EXPERIENCE_AREAS).toHaveProperty("travel");
+    expect(EXPERIENCE_AREAS).toHaveProperty("dating");
+    expect(EXPERIENCE_AREAS).toHaveProperty("creative");
+    expect(EXPERIENCE_AREAS).toHaveProperty("volunteering");
+    expect(EXPERIENCE_AREAS).toHaveProperty("encoreCareer");
+    expect(EXPERIENCE_AREAS).toHaveProperty("communityBuilding");
   });
 
   it("each area has a label and at least 5 subcategories", () => {
@@ -32,12 +42,11 @@ describe("Experience category architecture", () => {
     expect(unique.size).toBe(all.length);
   });
 
-  it("existing parenting categories are present (backward compat)", () => {
-    const parenting = EXPERIENCE_AREAS.parenting.subcategories;
-    expect(parenting).toContain("NICU parents");
-    expect(parenting).toContain("IVF");
-    expect(parenting).toContain("Single parents");
-    expect(parenting).toContain("Postpartum depression / anxiety");
+  it("elder-focused areas have appropriate subcategories", () => {
+    expect(EXPERIENCE_AREAS.retirement.subcategories).toContain("Just left my career");
+    expect(EXPERIENCE_AREAS.grandparenting.subcategories).toContain("New grandparent");
+    expect(EXPERIENCE_AREAS.communityBuilding.subcategories).toContain("Feeling lonely or isolated");
+    expect(EXPERIENCE_AREAS.dating.subcategories).toContain("Dating after loss or divorce");
   });
 });
 
@@ -55,26 +64,31 @@ describe("Journey stages", () => {
       expect(stage.sub).toBeTruthy();
     }
   });
+
+  it("includes elder-appropriate stages", () => {
+    const values = JOURNEY_STAGES.map((s) => s.value);
+    expect(values).toContain("Just beginning");
+    expect(values).toContain("Here to share");
+  });
 });
 
 // ── AC-03: Profile type includes new fields ────────────────────────────────
 
 describe("Profile type", () => {
   it("includes username and journey_stage fields", () => {
-    // TypeScript type check — if this compiles the test passes
     const profile: Profile = {
       id: "test-id",
       user_id: "user-id",
       full_name: "Test User",
-      username: "testuser",
-      journey_stage: "Just starting out",
-      description: "test",
-      experience_categories: ["NICU parents"],
+      username: "margaret",
+      journey_stage: "Just beginning",
+      description: "Retired teacher, love gardening",
+      experience_categories: ["New grandparent", "Just left my career"],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    expect(profile.username).toBe("testuser");
-    expect(profile.journey_stage).toBe("Just starting out");
+    expect(profile.username).toBe("margaret");
+    expect(profile.journey_stage).toBe("Just beginning");
   });
 
   it("username and journey_stage are nullable (existing profiles)", () => {
@@ -85,11 +99,12 @@ describe("Profile type", () => {
       username: null,
       journey_stage: null,
       description: "legacy",
-      experience_categories: ["IVF"],
+      experience_categories: ["Solo travel"],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     expect(legacy.username).toBeNull();
+    expect(legacy.journey_stage).toBeNull();
   });
 });
 
@@ -112,7 +127,6 @@ describe("MatchRequest type", () => {
 
   it("status only accepts pending, accepted, or declined", () => {
     const statuses: MatchRequest["status"][] = ["pending", "accepted", "declined"];
-    // TypeScript ensures only these values compile
     expect(statuses).toContain("pending");
     expect(statuses).toContain("accepted");
     expect(statuses).toContain("declined");
@@ -128,14 +142,14 @@ describe("Shared category intersection", () => {
   }
 
   it("returns overlapping categories", () => {
-    const userA = ["NICU parents", "IVF", "Single parents"];
-    const userB = ["IVF", "Cancer diagnosis (self)", "Single parents"];
-    expect(getSharedCategories(userA, userB)).toEqual(["IVF", "Single parents"]);
+    const userA = ["New grandparent", "Solo travel", "Just left my career"];
+    const userB = ["Solo travel", "Dating after loss or divorce", "New grandparent"];
+    expect(getSharedCategories(userA, userB)).toEqual(["New grandparent", "Solo travel"]);
   });
 
   it("returns empty array when no overlap", () => {
-    const userA = ["NICU parents"];
-    const userB = ["Divorce / separation"];
+    const userA = ["Starting a small business"];
+    const userB = ["Long-distance grandparenting"];
     expect(getSharedCategories(userA, userB)).toEqual([]);
   });
 });
