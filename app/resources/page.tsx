@@ -18,89 +18,192 @@ const c = {
 
 const resources = [
   {
-    category: "First-time parents",
+    category: "Retirement & New Chapter After Work",
     podcasts: [
       {
-        title: "The Birth Hour",
-        description: "Real birth stories to help you feel prepared and less alone going into parenthood.",
-        link: "https://open.spotify.com/show/3tiGECoYVleYnOWcXlRMfV",
+        title: "The Retirement Answer Man",
+        description:
+          "Roger Whitney helps you plan not just the money side of retirement, but what it actually feels like to live it — purpose, identity, and all.",
+        link: "https://rogerwhitney.com/retirement-answer-man-podcast/",
       },
       {
-        title: "Pregnancy Podcast",
-        description: "Evidence-based answers to the biggest questions about pregnancy, birth and new parenthood.",
-        link: "https://open.spotify.com/show/6UfCVpBPWOETiBDQv0QKTF",
-      },
-      {
-        title: "Survive and Thrive by PANDA",
-        description: "Honest conversations about the feelings that come with new parenthood that don't get talked about enough.",
-        link: "https://surviveandthrive.podbean.com",
+        title: "Second Act Stories",
+        description:
+          "Real people share how they reinvented themselves in the second half of life — new careers, new passions, new purpose.",
+        link: "https://www.aarp.org/podcasts/second-act-stories/",
       },
     ],
     books: [
-      { title: "The Whole-Brain Child", author: "Daniel J. Siegel & Tina Payne Bryson" },
-      { title: "Expecting Better", author: "Emily Oster" },
+      {
+        title: "How to Retire Happy, Wild, and Free",
+        author: "Ernie J. Zelinski",
+      },
+      { title: "Designing Your Life", author: "Bill Burnett & Dave Evans" },
+      { title: "Transitions", author: "William Bridges" },
     ],
   },
   {
-    category: "Postpartum depression & anxiety",
+    category: "Encore Career & New Work",
     podcasts: [
       {
-        title: "Mom and Mind",
-        description: "Dr. Kat, a perinatal psychologist, gets real about postpartum depression, anxiety and everything no one tells you.",
-        link: "https://open.spotify.com/show/6aiewMcVvlROmhuAcYCBty",
+        title: "Second Act Stories",
+        description:
+          "Stories of people who left one career and found something more meaningful — often something they never expected.",
+        link: "https://www.aarp.org/podcasts/second-act-stories/",
       },
       {
-        title: "Beyond Postpartum",
-        description: "Stories of resilience and recovery — because you are not alone and you will get through this.",
-        link: "https://postpartum.org/podcast/",
-      },
-      {
-        title: "I Am One — Postpartum Support International",
-        description: "One advocate with a microphone sharing stories that change trajectories.",
-        link: "https://postpartum.net/news/i-am-one-podcast/",
+        title: "WorkLife with Adam Grant",
+        description:
+          "Organisational psychologist Adam Grant explores the science of making work more meaningful — at any age.",
+        link: "https://www.ted.com/podcasts/worklife",
       },
     ],
     books: [
-      { title: "Good Moms Have Scary Thoughts", author: "Karen Kleiman" },
-      { title: "This Isn't What I Expected", author: "Karen Kleiman & Valerie Davis Raskin" },
+      {
+        title: "Encore: Finding Work That Matters in the Second Half of Life",
+        author: "Marc Freedman",
+      },
+      { title: "Late Bloomers", author: "Rich Karlgaard" },
     ],
   },
   {
-    category: "NICU parents",
+    category: "Travel & Adventure",
     podcasts: [
       {
-        title: "NICU Babies Parent Support — Hand to Hold",
-        description: "Listen while in the NICU, commuting to visits, or in your post-NICU life. You're not alone in this.",
-        link: "https://handtohold.org/resources/podcasts/nicu-babies-parent-support/",
+        title: "Senior Nomads",
+        description:
+          "Michael and Debbie Campbell sold their home after retirement and have been travelling the world slowly ever since. Practical, honest, and joyful.",
+        link: "https://seniornomads.com",
       },
       {
-        title: "Postpartum Better",
-        description: "Chelsea, a postpartum health coach, shares her experience with a NICU baby and what she wishes she'd known.",
-        link: "https://podcasts.apple.com/us/podcast/postpartum-better/id1711775028",
+        title: "Amateur Traveler",
+        description:
+          "Destination-focused episodes covering every corner of the world — great for planning your next journey.",
+        link: "https://amateurtraveler.com/podcast/",
       },
     ],
     books: [
-      { title: "Preemie Parents: An Action Plan for the NICU and Beyond", author: "Lori Arnold-Rothe" },
-      { title: "The NICU Experience", author: "Kali Malone" },
+      {
+        title: "Senior Nomads: Our Life of Travel",
+        author: "Debbie Campbell",
+      },
+      {
+        title: "The Art of Travel",
+        author: "Alain de Botton",
+      },
     ],
   },
   {
-    category: "Balancing careers and parenting",
+    category: "Dating, Relationships & Starting Fresh",
     podcasts: [
       {
-        title: "The Working Mom Hour",
-        description: "Real talk for working moms who know they get more done in an hour than most — and still feel underappreciated.",
-        link: "https://open.spotify.com/show/0J84VsR7o7XK58g6xCPEGe",
+        title: "Better After 50",
+        description:
+          "Felice Shapiro covers love, dating, health and reinvention in the second half — honest conversations you won't find elsewhere.",
+        link: "https://betterafter50.com/podcast",
       },
       {
-        title: "Blooming in Motherhood",
-        description: "Covers returning to work, work-life balance, identity shifts and the big experiences of the first year.",
-        link: "https://open.spotify.com/show/7x2T0Jbs5OlMKcqhORhFdP",
+        title: "Midlife Love Out Loud",
+        description:
+          "Real conversations about dating, relationships and starting over after 50 — with warmth and no judgement.",
+        link: "https://podcasts.apple.com/us/podcast/midlife-love-out-loud/id1492773509",
       },
     ],
     books: [
-      { title: "Drop the Ball", author: "Tiffany Dufu" },
-      { title: "Overwhelmed: Work, Love and Play When No One Has the Time", author: "Brigid Schulte" },
+      {
+        title: "Dating After 50 For Dummies",
+        author: "Pepper Schwartz",
+      },
+      {
+        title: "The New Love Deal",
+        author: "Arlene Dubin",
+      },
+    ],
+  },
+  {
+    category: "Creative Pursuits",
+    podcasts: [
+      {
+        title: "The Jealous Curator",
+        description:
+          "Danielle Krysa interviews working artists about their creative lives — and the fear, doubt and joy that comes with making things.",
+        link: "https://thejealouscurator.com/podcast/",
+      },
+      {
+        title: "Magic Lessons with Elizabeth Gilbert",
+        description:
+          "The author of Big Magic coaches real people through their creative fears. Warm, funny, and deeply encouraging.",
+        link: "https://www.elizabethgilbert.com/magic-lessons/",
+      },
+    ],
+    books: [
+      { title: "The Artist's Way", author: "Julia Cameron" },
+      { title: "Big Magic", author: "Elizabeth Gilbert" },
+      { title: "Bird by Bird", author: "Anne Lamott" },
+    ],
+  },
+  {
+    category: "Grandparenting Journey",
+    podcasts: [
+      {
+        title: "Inheritance",
+        description:
+          "Stories about what we pass down — values, memories, and the things we wish someone had told us.",
+        link: "https://podcasts.apple.com/us/podcast/inheritance/id1570102928",
+      },
+    ],
+    books: [
+      { title: "The Grandparent Effect", author: "Josh Mulvihill" },
+      {
+        title: "Long-Distance Grandparenting",
+        author: "Wayne Rice & David Staal",
+      },
+      {
+        title: "How to Grandparent",
+        author: "David Elkind",
+      },
+    ],
+  },
+  {
+    category: "Community Building & Making Friends",
+    podcasts: [
+      {
+        title: "Better After 50",
+        description:
+          "Covers loneliness, friendship, and building a life with people who actually get you — in the second half.",
+        link: "https://betterafter50.com/podcast",
+      },
+      {
+        title: "The Ezra Klein Show",
+        description:
+          "Thoughtful long-form conversations about meaning, community, and how we live together.",
+        link: "https://www.nytimes.com/column/ezra-klein-podcast",
+      },
+    ],
+    books: [
+      {
+        title: "The Art of Friendship",
+        author: "Roger Horchow & Sally Horchow",
+      },
+      { title: "Friendfluence", author: "Carlin Flora" },
+    ],
+  },
+  {
+    category: "Volunteering & Giving Back",
+    podcasts: [
+      {
+        title: "Second Act Stories",
+        description:
+          "Many of these stories involve people who found their purpose through service and giving back.",
+        link: "https://www.aarp.org/podcasts/second-act-stories/",
+      },
+    ],
+    books: [
+      { title: "Giving 2.0", author: "Laura Arrillaga-Andreessen" },
+      {
+        title: "Encore: Finding Work That Matters in the Second Half of Life",
+        author: "Marc Freedman",
+      },
     ],
   },
 ];
@@ -109,41 +212,67 @@ export default function ResourcesPage() {
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
       <main className="mx-auto max-w-3xl px-6 py-10 sm:px-8 sm:py-14">
-        <Link href="/dashboard"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-70"
-          style={{ color: c.inkMuted }}>
+        <Link
+          href="/dashboard"
+          className="mb-8 inline-flex items-center gap-2 text-base font-medium transition-opacity hover:opacity-70"
+          style={{ color: c.inkMuted }}
+        >
           ← Back to dashboard
         </Link>
 
         <div className="mb-10">
-          <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+          <h1
+            className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl"
+            style={{ color: c.ink }}
+          >
             Resources
           </h1>
-          <p className="text-sm leading-relaxed" style={{ color: c.inkMuted }}>
-            Curated podcasts and books while you wait for your match — or anytime you need them.
+          <p className="text-base leading-relaxed" style={{ color: c.inkMuted }}>
+            Podcasts and books curated for this chapter of life — to listen to while
+            you wait for your match, or anytime you need them.
           </p>
         </div>
 
         <div className="space-y-10">
           {resources.map((section) => (
             <section key={section.category}>
-              <h2 className="mb-5 text-base font-semibold" style={{ color: c.sage }}>
+              <h2
+                className="mb-5 text-base font-semibold"
+                style={{ color: c.sage }}
+              >
                 {section.category}
               </h2>
 
               {/* Podcasts */}
               <div className="mb-4 space-y-3">
                 {section.podcasts.map((podcast) => (
-                  <a key={podcast.title} href={podcast.link} target="_blank" rel="noopener noreferrer"
+                  <a
+                    key={podcast.title}
+                    href={podcast.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-start gap-4 rounded-2xl border p-4 transition-opacity hover:opacity-80"
-                    style={{ backgroundColor: c.card, borderColor: c.border }}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg"
-                      style={{ backgroundColor: c.sageLight }}>
+                    style={{ backgroundColor: c.card, borderColor: c.border }}
+                  >
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl"
+                      style={{ backgroundColor: c.sageLight }}
+                    >
                       🎧
                     </div>
                     <div>
-                      <p className="font-medium text-sm" style={{ color: c.ink }}>{podcast.title}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: c.inkMuted }}>{podcast.description}</p>
+                      <p
+                        className="font-medium text-base"
+                        style={{ color: c.ink }}
+                      >
+                        {podcast.title}
+                      </p>
+                      <p
+                        className="mt-1 text-sm leading-relaxed"
+                        style={{ color: c.inkMuted }}
+                      >
+                        {podcast.description}
+                      </p>
                     </div>
                   </a>
                 ))}
@@ -152,16 +281,30 @@ export default function ResourcesPage() {
               {/* Books */}
               <div className="space-y-2">
                 {section.books.map((book) => (
-                  <div key={book.title}
+                  <div
+                    key={book.title}
                     className="flex items-start gap-4 rounded-2xl border p-4"
-                    style={{ backgroundColor: c.card, borderColor: c.border }}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg"
-                      style={{ backgroundColor: c.apricotLight }}>
+                    style={{ backgroundColor: c.card, borderColor: c.border }}
+                  >
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl"
+                      style={{ backgroundColor: c.apricotLight }}
+                    >
                       📖
                     </div>
                     <div>
-                      <p className="font-medium text-sm" style={{ color: c.ink }}>{book.title}</p>
-                      <p className="mt-0.5 text-xs" style={{ color: c.inkMuted }}>{book.author}</p>
+                      <p
+                        className="font-medium text-base"
+                        style={{ color: c.ink }}
+                      >
+                        {book.title}
+                      </p>
+                      <p
+                        className="mt-0.5 text-sm"
+                        style={{ color: c.inkMuted }}
+                      >
+                        {book.author}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -170,11 +313,17 @@ export default function ResourcesPage() {
           ))}
         </div>
 
-        <div className="mt-12 rounded-2xl p-5 text-center border"
-          style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}>
-          <p className="text-sm" style={{ color: c.inkSoft }}>
-            Have a resource you'd love to see here?{" "}
-            <a href="mailto:khoundsumana@gmail.com" className="font-medium underline" style={{ color: c.sage }}>
+        <div
+          className="mt-12 rounded-2xl border p-5 text-center"
+          style={{ backgroundColor: c.sageLight, borderColor: `${c.sage}33` }}
+        >
+          <p className="text-base" style={{ color: c.inkSoft }}>
+            Have a podcast or book you'd love to see here?{" "}
+            <a
+              href="mailto:khoundsumana@gmail.com"
+              className="font-medium underline"
+              style={{ color: c.sage }}
+            >
               Send it our way
             </a>
           </p>
