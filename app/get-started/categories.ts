@@ -56,7 +56,7 @@ export const EXPERIENCE_AREAS = {
     ],
   },
   dating: {
-    label: "Dating / relationships / starting fresh",
+    label: "Dating, Relationships & Starting Fresh",
     subcategories: [
       "Dating after loss or divorce",
       "Online dating for the first time",
