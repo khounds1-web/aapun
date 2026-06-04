@@ -1,11 +1,10 @@
 // app/api/seed-resources/route.ts
-// Seeds resources dynamically based on categories found in profiles table
+// Seeds the Supabase resources table from the curated static RESOURCE_MAP.
+// Safe to re-run: clears old records and re-inserts fresh ones.
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import Anthropic from "@anthropic-ai/sdk";
-
-const COVER_COLORS = ["#e8e2d4", "#ddd4e8", "#d4e4d8", "#d4dce8", "#e8d4d4", "#d4e8e4"];
+import { RESOURCE_MAP, DEFAULT_RESOURCES } from "@/app/lib/resources";
 
 export async function GET() {
   const supabase = createClient(
@@ -13,94 +12,72 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // ── 1. Clear all existing resources ───────────────────────────────────────
+  const { error: deleteError } = await supabase
+    .from("resources")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
 
-  // Get all unique categories from profiles table — fully dynamic
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("experience_categories");
-
-  if (profilesError) {
-    return NextResponse.json({ error: profilesError.message }, { status: 500 });
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  const allCategories = Array.from(
-    new Set(
-      (profiles || []).flatMap((p: { experience_categories: string[] }) => p.experience_categories)
-    )
-  ).filter(Boolean);
+  // ── 2. Build rows from curated RESOURCE_MAP ────────────────────────────────
+  const rows: {
+    category: string;
+    type: string;
+    title: string;
+    subtitle: string;
+    link: string;
+    cover_bg: string;
+    cover_text: string;
+  }[] = [];
 
-  if (allCategories.length === 0) {
-    return NextResponse.json({ message: "No categories found in profiles" });
-  }
-
-  const results = [];
-
-  for (const category of allCategories) {
-    try {
-      // Check if we already have resources for this category
-      const { data: existing } = await supabase
-        .from("resources")
-        .select("title")
-        .eq("category", category);
-
-      if (existing && existing.length >= 3) {
-        results.push({ category, skipped: true, reason: "Already has resources" });
-        continue;
-      }
-
-      const existingTitles = (existing || []).map((r: { title: string }) => r.title);
-
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
-        messages: [{
-          role: "user",
-          content: `Find 3 high-quality podcasts or books for parents in this situation: "${category}".
-
-Rules:
-- Real, existing resources with working websites
-- Podcasts only — no books
-- Free to access or widely available
-- Do NOT include: ${existingTitles.join(", ")}
-- Link to podcast website (not Spotify) or Goodreads for books
-
-Return ONLY a JSON array, no other text:
-[
-  {
-    "type": "listen" or "read",
-    "title": "Title",
-    "subtitle": "Author or show description — one line",
-    "link": "https://...",
-    "cover_text": "Short 2-3 word cover text"
-  }
-]`
-        }]
-      });
-
-      const text = response.content[0].type === "text" ? response.content[0].text : "[]";
-      const newResources = JSON.parse(text.replace(/```json|```/g, "").trim());
-
-      const toInsert = newResources.map((r: any, i: number) => ({
+  for (const [category, resources] of Object.entries(RESOURCE_MAP)) {
+    for (const r of resources) {
+      rows.push({
         category,
         type: r.type,
         title: r.title,
         subtitle: r.subtitle,
         link: r.link,
-        cover_bg: COVER_COLORS[i % COVER_COLORS.length],
-        cover_text: r.cover_text,
-      }));
-
-      const { error } = await supabase.from("resources").insert(toInsert);
-      if (error) {
-        results.push({ category, error: error.message });
-      } else {
-        results.push({ category, added: toInsert.length });
-      }
-    } catch (err) {
-      results.push({ category, error: String(err) });
+        cover_bg: r.coverBg,
+        cover_text: r.coverText,
+      });
     }
   }
 
-  return NextResponse.json({ success: true, categories: allCategories.length, results });
+  // ── 3. Also seed DEFAULT_RESOURCES under a special "default" category ──────
+  for (const r of DEFAULT_RESOURCES) {
+    rows.push({
+      category: "default",
+      type: r.type,
+      title: r.title,
+      subtitle: r.subtitle,
+      link: r.link,
+      cover_bg: r.coverBg,
+      cover_text: r.coverText,
+    });
+  }
+
+  // ── 4. Insert in batches of 50 ─────────────────────────────────────────────
+  const BATCH = 50;
+  const results = [];
+
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const batch = rows.slice(i, i + BATCH);
+    const { error } = await supabase.from("resources").insert(batch);
+    if (error) {
+      results.push({ batch: i / BATCH, error: error.message });
+    } else {
+      results.push({ batch: i / BATCH, inserted: batch.length });
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    total: rows.length,
+    categories: Object.keys(RESOURCE_MAP).length,
+    results,
+  });
 }

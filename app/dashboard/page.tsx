@@ -283,7 +283,8 @@ export default function DashboardPage() {
     const { data: available } = await query;
 
     if (!available || available.length === 0) {
-      const { data: fallback } = await supabase.from("resources").select("*").in("category", categories).limit(10);
+      // Fall back to category matches (ignoring seen), then to "default" curated picks
+      const { data: fallback } = await supabase.from("resources").select("*").in("category", [...categories, "default"]).limit(10);
       if (!fallback || fallback.length === 0) return;
       const today = new Date();
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
