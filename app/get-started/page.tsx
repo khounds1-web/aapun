@@ -155,13 +155,13 @@ export default function GetStartedPage() {
           </div>
 
           {isReturning && (
-            <p className="mb-4 text-sm" style={{ color: c.inkMuted }}>
-              Welcome back, <strong style={{ color: c.ink }}>{existingName}</strong>. Add a new topic below.
+            <p className="mb-4 text-base" style={{ color: c.inkMuted }}>
+              Welcome back, <strong style={{ color: c.ink }}>{existingName}</strong>. Add another topic below.
             </p>
           )}
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-base">
               <span style={{ color: c.inkMuted }}>Step {step} of {TOTAL_STEPS}</span>
               <span className="font-medium" style={{ color: c.sage }}>{Math.round(progress)}%</span>
             </div>
@@ -209,23 +209,23 @@ export default function GetStartedPage() {
           <nav className="mt-10 flex items-center justify-between gap-4 border-t pt-8" style={{ borderColor: c.border }}>
             {step > 1 ? (
               <button type="button" onClick={goBack}
-                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors hover:bg-black/5"
+                className="inline-flex h-12 items-center justify-center rounded-full px-6 text-base font-medium transition-colors hover:bg-black/5"
                 style={{ color: c.inkSoft }}>
-                Back
+                ← Back
               </button>
             ) : <span />}
 
             {step < TOTAL_STEPS ? (
               <button type="button" onClick={goNext} disabled={!canContinue}
-                className="inline-flex h-11 items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-12 items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                 style={{ backgroundColor: c.sage }}>
                 Continue
               </button>
             ) : (
               <button type="button" onClick={handleSubmit} disabled={!canContinue || isSubmitting}
-                className="inline-flex h-11 min-w-[9.5rem] items-center justify-center rounded-full px-8 text-sm font-medium text-white shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-12 min-w-[10rem] items-center justify-center rounded-full px-10 text-base font-medium text-white shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                 style={{ backgroundColor: c.sage }}>
-                {isSubmitting ? "Saving…" : "Add topic"}
+                {isSubmitting ? "Saving…" : "Find my people"}
               </button>
             )}
           </nav>
@@ -260,10 +260,10 @@ function StepCategories({
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        {firstName ? `Hi ${firstName}, what's on your mind?` : "Hi, what's on your mind?"}
+        {firstName ? `Hi ${firstName}, what's this chapter about for you?` : "What's this chapter about for you?"}
       </h1>
-      <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-        Open a topic and choose what fits. This is how we find someone who truly gets it.
+      <p className="mb-6 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        Open a topic and pick what fits. This is how we find someone who truly gets where you are.
       </p>
 
       <div className="space-y-2">
@@ -283,7 +283,7 @@ function StepCategories({
                 style={{ backgroundColor: isOpen ? c.sageLight : "#fff" }}
                 aria-expanded={isOpen}>
                 <div className="flex items-center gap-2.5">
-                  <span className="font-semibold text-sm" style={{ color: c.ink }}>
+                  <span className="font-semibold text-base" style={{ color: c.ink }}>
                     {area.label}
                   </span>
                   {selectedCount > 0 && (
@@ -310,7 +310,7 @@ function StepCategories({
                         return (
                           <button key={category} type="button" aria-pressed={isSelected}
                             onClick={() => onToggle(category)}
-                            className="rounded-full px-3.5 py-2 text-sm font-medium transition-all"
+                            className="rounded-full px-4 py-2.5 text-base font-medium transition-all"
                             style={isSelected
                               ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
                               : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
@@ -328,8 +328,8 @@ function StepCategories({
       </div>
 
       {selected.size > 0 && (
-        <p className="mt-5 text-sm" style={{ color: c.sage }}>
-          {selected.size} selected — you can always update this later.
+        <p className="mt-5 text-base" style={{ color: c.sage }}>
+          {selected.size} selected — you can always change this later.
         </p>
       )}
     </div>
@@ -342,12 +342,12 @@ function StepJourneyStage({ value, onChange }: { value: string; onChange: (v: st
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        Where are you in your journey?
+        Where are you in this chapter?
       </h1>
-      <p className="mb-8 leading-relaxed" style={{ color: c.inkSoft }}>
-        This helps us find someone at a similar stage — not too far ahead, not too far behind.
+      <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        We'll connect you with someone at a similar point — whether you're just starting out or ready to share what you've learned.
       </p>
-      <div className="space-y-3" role="radiogroup" aria-label="Journey stage">
+      <div className="space-y-3" role="radiogroup" aria-label="Where you are in this chapter">
         {JOURNEY_STAGES.map((stage) => {
           const isSelected = value === stage.value;
           return (
@@ -357,10 +357,10 @@ function StepJourneyStage({ value, onChange }: { value: string; onChange: (v: st
               style={isSelected
                 ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(107,91,158,0.3)" }
                 : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-              <p className="font-semibold text-sm" style={{ color: isSelected ? "#fff" : c.ink }}>
+              <p className="font-semibold text-base" style={{ color: isSelected ? "#fff" : c.ink }}>
                 {stage.label}
               </p>
-              <p className="text-xs mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : c.inkMuted }}>
+              <p className="text-sm mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : c.inkMuted }}>
                 {stage.sub}
               </p>
             </button>
@@ -378,22 +378,22 @@ function StepDescription({ value, onChange, maxLength }: { value: string; onChan
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        Tell us your story, in your words
+        A little about you
       </h1>
-      <p className="mb-2 leading-relaxed" style={{ color: c.inkSoft }}>
-        A few sentences about what you'd like to talk about with someone who gets it.
+      <p className="mb-2 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        A few sentences about where you are and what you'd love to talk about. This is what your conversation partner will see.
       </p>
-      <p className="mb-6 text-sm" style={{ color: c.inkMuted }}>
-        This is optional — share as much or as little as you'd like.
+      <p className="mb-6 text-base" style={{ color: c.inkMuted }}>
+        Completely optional — share as much or as little as you like.
       </p>
-      <label htmlFor="experience-description" className="sr-only">Your story</label>
+      <label htmlFor="experience-description" className="sr-only">A little about you</label>
       <textarea id="experience-description" value={value}
         onChange={(e) => onChange(e.target.value.slice(0, maxLength))} rows={6}
-        placeholder="For example: I'm a first-time mom with a 6-month-old and I'm really struggling with the isolation. I'd love to talk to someone who gets it…"
+        placeholder="For example: I retired last year after 30 years in nursing, and honestly I wasn't ready for how quiet everything became. I'd love to talk to someone who's navigated that shift…"
         className="w-full resize-y rounded-xl px-4 py-3 text-base leading-relaxed outline-none transition-shadow focus:ring-2"
         style={{ backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border, color: c.ink, "--tw-ring-color": c.sage } as React.CSSProperties} />
-      <div className="mt-2 flex justify-end text-sm">
-        <p style={{ color: c.inkMuted }}>{remaining} left</p>
+      <div className="mt-2 flex justify-end text-base">
+        <p style={{ color: c.inkMuted }}>{remaining} characters left</p>
       </div>
     </div>
   );
@@ -410,32 +410,32 @@ function StepUsername({ value, onChange, confirmedAdult, onConfirmedAdultChange 
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
         What should we call you?
       </h1>
-      <p className="mb-6 leading-relaxed" style={{ color: c.inkSoft }}>
-        This is what your match will see — not your full name. Use a first name, nickname, or anything you're comfortable with.
+      <p className="mb-6 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        Your conversation partner will see this — not your full name. Your first name, a nickname, whatever feels right.
       </p>
-      <label htmlFor="username" className="mb-2 block text-sm font-medium" style={{ color: c.ink }}>
+      <label htmlFor="username" className="mb-2 block text-base font-medium" style={{ color: c.ink }}>
         Your name on Aapun
       </label>
       <input id="username" type="text" autoComplete="nickname" value={value}
-        onChange={(e) => onChange(e.target.value)} placeholder="First name or chosen name"
-        className="mb-4 w-full rounded-xl px-4 py-3 text-base outline-none transition-shadow focus:ring-2"
+        onChange={(e) => onChange(e.target.value)} placeholder="e.g. Margaret, Bob, or just M"
+        className="mb-5 w-full rounded-xl px-4 py-3.5 text-lg outline-none transition-shadow focus:ring-2"
         style={{ color: c.ink, backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }} />
       <div className="mb-6">
         <label htmlFor="confirm-adult" className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1">
           <input id="confirm-adult" type="checkbox" checked={confirmedAdult}
             onChange={(e) => onConfirmedAdultChange(e.target.checked)} aria-required="true"
-            className="mt-0.5 h-[1.125rem] w-[1.125rem] shrink-0 rounded outline-none"
+            className="mt-1 h-5 w-5 shrink-0 rounded outline-none"
             style={{ accentColor: c.sage, borderColor: c.border }} />
-          <span className="text-sm font-medium leading-snug" style={{ color: c.ink }}>
+          <span className="text-base font-medium leading-snug" style={{ color: c.ink }}>
             I confirm I am 18 years of age or older
           </span>
         </label>
       </div>
-      <aside className="rounded-xl p-4 text-sm leading-relaxed"
+      <aside className="rounded-xl p-4 text-base leading-relaxed"
         style={{ backgroundColor: c.apricotLight, borderWidth: 1, borderStyle: "solid", borderColor: `${c.apricot}33` }} role="note">
         <p className="font-medium" style={{ color: c.ink }}>Aapun is not therapy or medical advice.</p>
         <p className="mt-2" style={{ color: c.inkSoft }}>
-          Peers on Aapun are not clinicians. This platform is for mutual support — not diagnosis, treatment, or crisis care.
+          Everyone on Aapun is a peer, not a clinician. This is a space for real conversation and mutual support — not diagnosis, treatment, or crisis care.
         </p>
       </aside>
     </div>
