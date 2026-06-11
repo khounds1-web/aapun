@@ -13,9 +13,9 @@ const c = {
   ink: "#1a1625",
   inkSoft: "#3d3654",
   inkMuted: "#9b91b8",
-  sage: "#6b5b9e",
-  sageLight: "#ede8f8",
-  apricot: "#c97a52",
+  sage: "#0EA5E9",
+  sageLight: "#E0F2FE",
+  apricot: "#EA580C",
   apricotLight: "#f5ece6",
   card: "#ffffff",
   border: "#edeaf4",
@@ -84,7 +84,7 @@ function getGreetingEmoji() {
 
 function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   const initial = name.charAt(0).toUpperCase();
-  const colors = ["#6b5b9e", "#c97a52", "#4a7c5f", "#9b6b5b", "#5b6b9e"];
+  const colors = ["#0EA5E9", "#EA580C", "#4a7c5f", "#9b6b5b", "#5b6b9e"];
   const color = colors[name.charCodeAt(0) % colors.length];
   return (
     <div className="shrink-0 flex items-center justify-center rounded-full text-white font-semibold"

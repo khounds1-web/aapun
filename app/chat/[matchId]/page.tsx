@@ -13,9 +13,9 @@ const c = {
   ink: "#1a1625",
   inkSoft: "#3d3654",
   inkMuted: "#9b91b8",
-  sage: "#6b5b9e",
-  sageLight: "#ede8f8",
-  apricot: "#c97a52",
+  sage: "#0EA5E9",
+  sageLight: "#E0F2FE",
+  apricot: "#EA580C",
   apricotLight: "#f5ece6",
   card: "#ffffff",
   border: "#edeaf4",
@@ -43,7 +43,7 @@ type ProfileInfo = {
 
 function Avatar({ name, photo, size = 36 }: { name: string; photo?: string; size?: number }) {
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-  const colors = ["#6b5b9e", "#c97a52", "#5c6b3a", "#6b3a5c", "#3a5c6b"];
+  const colors = ["#0EA5E9", "#EA580C", "#5c6b3a", "#6b3a5c", "#3a5c6b"];
   const color = colors[name.charCodeAt(0) % colors.length];
 
   if (photo) {

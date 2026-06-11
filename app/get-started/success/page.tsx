@@ -12,10 +12,10 @@ const c = {
   inkMuted: "#6d8078",
   sage: "#3a6b5c",
   sageLight: "#e4ede9",
-  apricotLight: "#f3e4db",
+  apricotLight: "#FED7AA",
   card: "rgba(255, 255, 255, 0.85)",
   border: "#d8e4de",
-  apricot: "#c97a52",
+  apricot: "#EA580C",
 } as const;
 
 type Profile = {

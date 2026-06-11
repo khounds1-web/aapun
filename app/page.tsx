@@ -6,17 +6,17 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const c = {
-  bg: "#f4f0f8",
-  ink: "#1e1a2e",
-  inkSoft: "#4a4060",
-  inkMuted: "#8a7fa0",
-  sage: "#6b5b9e",
-  sageDark: "#574a85",
-  sageLight: "#ede8f8",
-  apricot: "#c97a52",
-  apricotLight: "#f3e4db",
+  bg: "#F9FAFB",
+  ink: "#1F2937",
+  inkSoft: "#374151",
+  inkMuted: "#6B7280",
+  sage: "#0EA5E9",
+  sageDark: "#0284C7",
+  sageLight: "#E0F2FE",
+  apricot: "#EA580C",
+  apricotLight: "#FED7AA",
   card: "rgba(255, 255, 255, 0.85)",
-  border: "#ede8f8",
+  border: "#E0F2FE",
 } as const;
 
 export default function Home() {

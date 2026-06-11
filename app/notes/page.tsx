@@ -8,12 +8,12 @@ import Link from "next/link";
 
 const c = {
   bg: "#faf9fc",
-  ink: "#1e1a2e",
-  inkSoft: "#4a4060",
+  ink: "#1F2937",
+  inkSoft: "#374151",
   inkMuted: "#a89fc0",
-  sage: "#6b5b9e",
-  sageLight: "#ede8f8",
-  apricot: "#c97a52",
+  sage: "#0EA5E9",
+  sageLight: "#E0F2FE",
+  apricot: "#EA580C",
   card: "#ffffff",
   border: "#f0ebf8",
 } as const;

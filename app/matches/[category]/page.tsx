@@ -14,8 +14,8 @@ const c = {
   sage: "#3a6b5c",
   sageDark: "#2f584b",
   sageLight: "#e4ede9",
-  apricot: "#c97a52",
-  apricotLight: "#f3e4db",
+  apricot: "#EA580C",
+  apricotLight: "#FED7AA",
   card: "#ffffff",
   border: "#e8e0d8",
 } as const;

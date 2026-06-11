@@ -13,8 +13,8 @@ const c = {
   sage: "#3a6b5c",
   sageDark: "#2f584b",
   sageLight: "#e4ede9",
-  apricot: "#c97a52",
-  apricotLight: "#f3e4db",
+  apricot: "#EA580C",
+  apricotLight: "#FED7AA",
   card: "rgba(255, 255, 255, 0.85)",
   border: "#d8e4de",
 } as const;
@@ -125,7 +125,7 @@ export default function AdminPage() {
               onClick={handleRematch}
               disabled={rematching}
               className="rounded-full px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              style={{ backgroundColor: "#6b5b9e" }}>
+              style={{ backgroundColor: "#0EA5E9" }}>
               {rematching ? "Matching..." : "Re-run matching"}
             </button>
             <button onClick={loadProfiles}
