@@ -385,6 +385,12 @@ function StepCategories({
     });
   }
 
+  function selectAll(subcategories: readonly string[]) {
+    subcategories.forEach((cat) => {
+      if (!selected.has(cat)) onToggle(cat);
+    });
+  }
+
   const areas = Object.entries(EXPERIENCE_AREAS) as [string, { label: string; subcategories: readonly string[] }][];
 
   return (
@@ -393,13 +399,14 @@ function StepCategories({
         {firstName ? `Hi ${firstName}, what's this chapter about for you?` : "What's this chapter about for you?"}
       </h1>
       <p className="mb-6 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
-        Open a topic and pick what fits. This is how we find someone who truly gets where you are.
+        Pick everything that feels true — across as many topics as you like. The more you choose, the better your matches.
       </p>
 
       <div className="space-y-2">
         {areas.map(([areaKey, area]) => {
           const isOpen = openAreas.has(areaKey);
           const selectedCount = area.subcategories.filter(s => selected.has(s)).length;
+          const allSelected = selectedCount === area.subcategories.length;
 
           return (
             <div key={areaKey} className="rounded-xl overflow-hidden"
@@ -442,13 +449,22 @@ function StepCategories({
                             onClick={() => onToggle(category)}
                             className="rounded-full px-4 py-2.5 text-base font-medium transition-all"
                             style={isSelected
-                              ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 3px rgba(107,91,158,0.25)" }
+                              ? { backgroundColor: c.sage, color: "#fff" }
                               : { backgroundColor: "#fff", color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
                             {category}
                           </button>
                         );
                       })}
                     </div>
+                    {!allSelected && (
+                      <button
+                        type="button"
+                        onClick={() => selectAll(area.subcategories)}
+                        className="mt-3 text-sm font-medium transition-opacity hover:opacity-70"
+                        style={{ color: c.sage }}>
+                        Select all in this topic
+                      </button>
+                    )}
                   </fieldset>
                 </div>
               )}
@@ -457,11 +473,13 @@ function StepCategories({
         })}
       </div>
 
-      {selected.size > 0 && (
-        <p className="mt-5 text-base" style={{ color: c.sage }}>
-          {selected.size} selected — you can always change this later.
-        </p>
-      )}
+      <p className="mt-5 text-base" style={{ color: selected.size > 0 ? c.sage : c.inkMuted }}>
+        {selected.size === 0
+          ? "Nothing selected yet — open a topic above to get started."
+          : selected.size < 3
+            ? `${selected.size} selected — feel free to pick more across different topics.`
+            : `${selected.size} selected ✓`}
+      </p>
     </div>
   );
 }
