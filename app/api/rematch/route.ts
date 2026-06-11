@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
   const { userId } = await auth();
-  if (!userId || userId !== process.env.ADMIN_USER_ID) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const supabase = createClient(
@@ -35,7 +35,7 @@ export async function POST() {
       .select("*")
       .neq("user_id", profile.user_id)
       .is("match_id", null)
-      .filter("experience_categories", "ov", `{${profile.experience_categories.join(",")}}`);
+      .filter("experience_categories", "ov", `{${profile.experience_categories.map((c: string) => `"${c}"`).join(",")}}`);
 
     if (!potentialMatches || potentialMatches.length === 0) continue;
 
