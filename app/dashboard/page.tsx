@@ -370,10 +370,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen font-sans">
+    <div className="min-h-screen font-sans" style={{ background: "linear-gradient(145deg, #93c5fd 0%, #bfdbfe 35%, #dbeafe 65%, #eff8ff 100%)" }}>
 
       {/* Nav */}
-      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: "rgba(219,234,254,0.75)", backdropFilter: "blur(10px)" }}>
+      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: "rgba(219,234,254,0.90)" }}>
         <div className="mx-auto max-w-2xl flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <AapunMark size={26} />
@@ -660,7 +660,7 @@ export default function DashboardPage() {
 
       {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around border-t py-2 px-4"
-        style={{ backgroundColor: "rgba(219,234,254,0.85)", backdropFilter: "blur(10px)", borderColor: c.border }}>
+        style={{ backgroundColor: "rgba(219,234,254,0.90)", borderColor: c.border }}>
         {navItems.map((item) => (
           <Link key={item.label} href={item.href}
             className="flex flex-col items-center gap-0.5 px-2 py-1"

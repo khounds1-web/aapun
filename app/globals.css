@@ -13,8 +13,7 @@
 }
 
 body {
-  background: linear-gradient(145deg, #93c5fd 0%, #bfdbfe 30%, #dbeafe 60%, #eff8ff 100%);
-  background-attachment: fixed;
+  background: #dbeafe;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
