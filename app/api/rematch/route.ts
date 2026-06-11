@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
   const { userId } = await auth();
-  if (!userId) {
+  if (!userId || userId !== process.env.ADMIN_USER_ID) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const supabase = createClient(
