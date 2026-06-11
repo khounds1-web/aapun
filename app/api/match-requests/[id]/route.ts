@@ -20,8 +20,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  if (action !== "accept" && action !== "decline") {
-    return NextResponse.json({ error: "action must be accept or decline" }, { status: 400 });
+  if (action !== "accept" && action !== "decline" && action !== "cancel") {
+    return NextResponse.json({ error: "action must be accept, decline, or cancel" }, { status: 400 });
   }
 
   const { id } = await context.params;
@@ -44,14 +44,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Match request not found" }, { status: 404 });
   }
 
-  // Only the recipient (to_user_id) can accept or decline
-  if (matchReq.to_user_id !== userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   // Can only action a pending request
   if (matchReq.status !== "pending") {
     return NextResponse.json({ error: "Request already actioned" }, { status: 409 });
+  }
+
+  // ── Cancel path (sender withdraws their own request) ─────────────────────
+  if (action === "cancel") {
+    if (matchReq.from_user_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    await supabase
+      .from("match_requests")
+      .update({ status: "declined", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    return NextResponse.json({ ok: true });
+  }
+
+  // Only the recipient (to_user_id) can accept or decline
+  if (matchReq.to_user_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // ── Decline path ──────────────────────────────────────────────────────────

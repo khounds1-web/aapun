@@ -68,6 +68,21 @@ type MatchRequestWithProfile = MatchRequest & {
   };
 };
 
+type OutgoingProposal = {
+  id: string;
+  from_profile_id: string;
+  to_profile_id: string;
+  to_user_id: string;
+  status: string;
+  created_at: string;
+  to_profile: {
+    username: string | null;
+    full_name: string;
+    description: string;
+    experience_categories: string[];
+  };
+};
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Hope you slept okay,";
@@ -114,6 +129,7 @@ export default function DashboardPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [matchedPeople, setMatchedPeople] = useState<MatchedPerson[]>([]);
   const [pendingRequests, setPendingRequests] = useState<MatchRequestWithProfile[]>([]);
+  const [outgoingProposals, setOutgoingProposals] = useState<OutgoingProposal[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
 
   const supabase = createClient(
@@ -192,6 +208,17 @@ export default function DashboardPage() {
       (r: MatchRequestWithProfile) => r.from_profile != null
     );
     setPendingRequests(validPending);
+
+    // Load outgoing requests this user sent (waiting for the other person to respond)
+    const { data: outgoingData } = await supabase
+      .from("match_requests")
+      .select(`*, to_profile:profiles!to_profile_id(username, full_name, description, experience_categories)`)
+      .eq("from_user_id", user.id)
+      .eq("status", "pending");
+
+    setOutgoingProposals(
+      (outgoingData || []).filter((r: OutgoingProposal) => r.to_profile != null)
+    );
 
     // Load suggestions and resources
     const allCategories = Array.from(
@@ -312,6 +339,20 @@ export default function DashboardPage() {
     setPendingRequests((prev) => prev.filter((r) => r.id !== id));
   }
 
+  // Cancel an outgoing request
+  async function handleCancelOutgoing(id: string) {
+    try {
+      await fetch(`/api/match-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+    } catch {
+      // best effort
+    }
+    setOutgoingProposals((prev) => prev.filter((r) => r.id !== id));
+  }
+
   const firstName = user?.firstName || topics[0]?.full_name?.split(" ")[0] || "there";
   const unmatchedTopics = topics.filter(t => !t.matched_with);
   const aiHref = topics.length > 0 ? `/ai-chat/${topics[0].id}` : "/get-started";
@@ -368,20 +409,22 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-10">
 
-            {/* ── Match Proposals — pending incoming requests ── */}
+            {/* ── Match Proposals — incoming requests (show up to 3) ── */}
             {pendingRequests.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold" style={{ color: c.ink }}>
                     Someone wants to connect
                   </h2>
-                  <span className="text-xs rounded-full px-2.5 py-1 font-medium"
-                    style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
-                    {pendingRequests.length} pending
-                  </span>
+                  {pendingRequests.length > 3 && (
+                    <span className="text-xs rounded-full px-2.5 py-1 font-medium"
+                      style={{ backgroundColor: c.apricotLight, color: c.apricot }}>
+                      +{pendingRequests.length - 3} more
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-3">
-                  {pendingRequests.map((req) => (
+                  {pendingRequests.slice(0, 3).map((req) => (
                     <MatchProposalCard
                       key={req.id}
                       request={req}
@@ -390,6 +433,50 @@ export default function DashboardPage() {
                       onDecline={handleProposalDecline}
                     />
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Outgoing proposals — waiting for the other person ── */}
+            {outgoingProposals.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold mb-3" style={{ color: c.ink }}>
+                  Waiting for a response
+                </h2>
+                <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: c.card, borderColor: c.border }}>
+                  {outgoingProposals.map((req, i) => {
+                    const profile = req.to_profile;
+                    const displayName = profile.username ?? profile.full_name.split(" ")[0];
+                    const mySet = new Set(myAllCategories);
+                    const shared = profile.experience_categories.filter((cat) => mySet.has(cat));
+                    return (
+                      <div key={req.id}
+                        className={`flex items-center gap-4 px-5 py-4 ${i < outgoingProposals.length - 1 ? "border-b" : ""}`}
+                        style={{ borderColor: c.border }}>
+                        <Avatar name={displayName} size={40} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium" style={{ color: c.ink }}>{displayName}</p>
+                          {shared.length > 0 && (
+                            <p className="text-xs mt-0.5 truncate" style={{ color: c.inkMuted }}>
+                              {shared.slice(0, 2).join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs rounded-full px-2.5 py-1"
+                            style={{ backgroundColor: c.sageLight, color: c.sage }}>
+                            Sent ✓
+                          </span>
+                          <button
+                            onClick={() => handleCancelOutgoing(req.id)}
+                            className="text-xs transition-opacity hover:opacity-60"
+                            style={{ color: c.inkMuted }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -474,7 +561,7 @@ export default function DashboardPage() {
             )}
 
             {/* Empty state */}
-            {matchedPeople.length === 0 && unmatchedTopics.length === 0 && pendingRequests.length === 0 && (
+            {matchedPeople.length === 0 && unmatchedTopics.length === 0 && pendingRequests.length === 0 && outgoingProposals.length === 0 && (
               <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: c.card, borderColor: c.border }}>
                 <p className="text-sm mb-4" style={{ color: c.inkMuted }}>Add your first space to begin.</p>
                 <Link href="/get-started"

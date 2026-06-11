@@ -175,7 +175,7 @@ export function MatchProposalCard({
           className="flex-1 inline-flex items-center justify-center rounded-full py-2.5 text-sm font-medium text-white transition-opacity disabled:opacity-40"
           style={{ backgroundColor: c.sage }}
         >
-          {actioning === "accept" ? "Connecting…" : "Accept"}
+          {actioning === "accept" ? "Connecting…" : "Connect"}
         </button>
         <button
           type="button"
@@ -184,7 +184,7 @@ export function MatchProposalCard({
           className="flex-1 inline-flex items-center justify-center rounded-full py-2.5 text-sm font-medium transition-colors disabled:opacity-40 hover:bg-black/5"
           style={{ color: c.inkSoft, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}
         >
-          {actioning === "decline" ? "…" : "Decline"}
+          {actioning === "decline" ? "…" : "Not now"}
         </button>
       </div>
     </div>
