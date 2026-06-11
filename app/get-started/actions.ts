@@ -11,6 +11,9 @@ export async function saveProfile(data: {
   journeyStage?: string;
   description: string;
   experienceCategories: string[];
+  emotionalState?: string;
+  hereFor?: string;
+  ageRange?: string;
 }) {
   const { userId } = await auth();
   if (!userId) {
@@ -33,6 +36,9 @@ export async function saveProfile(data: {
       full_name: data.fullName,
       username: data.username?.trim() || null,
       journey_stage: data.journeyStage?.trim() || null,
+      emotional_state: data.emotionalState?.trim() || null,
+      here_for: data.hereFor?.trim() || null,
+      age_range: data.ageRange?.trim() || null,
       email: email,
       description: data.description,
       experience_categories: data.experienceCategories,
@@ -53,6 +59,9 @@ export async function saveProfile(data: {
         <h2>New user signed up on Aapun</h2>
         <p><strong>Name:</strong> ${data.fullName}</p>
         <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Age range:</strong> ${data.ageRange || "Not provided"}</p>
+        <p><strong>Feeling:</strong> ${data.emotionalState || "Not provided"}</p>
+        <p><strong>Here for:</strong> ${data.hereFor || "Not provided"}</p>
         <p><strong>Topics:</strong> ${data.experienceCategories.join(", ")}</p>
         <p><strong>Story:</strong> ${data.description || "Not provided"}</p>
         <br/>
@@ -64,7 +73,7 @@ export async function saveProfile(data: {
   }
 
   try {
-    await autoMatch(supabase, newProfile, data.fullName, email, data.experienceCategories);
+    await autoMatch(supabase, newProfile, data.fullName, email, data.experienceCategories, data.ageRange);
   } catch (matchError) {
     console.error("Auto-match failed:", matchError);
   }
@@ -78,7 +87,8 @@ async function autoMatch(
   newProfile: { id: string; user_id: string },
   newUserName: string,
   newUserEmail: string,
-  categories: string[]
+  categories: string[],
+  ageRange?: string
 ) {
   // Find unmatched profiles with overlapping categories, different user
   const { data: potentialMatches } = await supabase
@@ -90,10 +100,24 @@ async function autoMatch(
 
   if (!potentialMatches || potentialMatches.length === 0) return;
 
+  // Score and rank matches:
+  // +3 per shared subcategory, +1 for same age range
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scored = potentialMatches.map((m: any) => {
+    const sharedCats = categories.filter((c: string) =>
+      (m.experience_categories || []).includes(c)
+    ).length;
+    const sameAge = ageRange && m.age_range === ageRange ? 1 : 0;
+    return { ...m, _score: sharedCats * 3 + sameAge };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }).sort((a: any, b: any) => b._score - a._score);
+
+  const rankedMatches = scored;
+
   // Track which user_ids we've already sent requests to in this run
   const matchedUserIds = new Set<string>();
 
-  for (const match of potentialMatches) {
+  for (const match of rankedMatches) {
     // Skip same user (different profiles of same person)
     if (match.user_id === newProfile.user_id) continue;
 

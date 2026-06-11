@@ -1,7 +1,7 @@
 "use client";
 
 import { saveProfile } from "@/app/get-started/actions";
-import { EXPERIENCE_AREAS, JOURNEY_STAGES } from "@/app/get-started/categories";
+import { EXPERIENCE_AREAS } from "@/app/get-started/categories";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -22,22 +22,24 @@ const c = {
   border: "#E5E7EB",
 } as const;
 
-const DESCRIPTION_MAX = 500;
-
 export default function GetStartedPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [existingName, setExistingName] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  // New spec fields
+  const [emotionalState, setEmotionalState] = useState("");
+  const [hereFor, setHereFor] = useState("");
+  const [ageRange, setAgeRange] = useState("");
+  // Existing fields
   const [categories, setCategories] = useState<Set<string>>(new Set());
-  const [journeyStage, setJourneyStage] = useState("");
   const [description, setDescription] = useState("");
   const [username, setUsername] = useState("");
   const [confirmedAdult, setConfirmedAdult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     if (!isLoaded || !user) {
@@ -64,9 +66,12 @@ export default function GetStartedPage() {
       });
   }, [isLoaded, user]);
 
-  // Returning users skip the username step (step 4)
+  // Step order:
+  // 1 = emotional state, 2 = here for, 3 = age range,
+  // 4 = categories, 5 = short intro (optional),
+  // 6 = username + confirm (new users only)
   const isReturning = existingName !== null;
-  const TOTAL_STEPS = isReturning ? 3 : 4;
+  const TOTAL_STEPS = isReturning ? 5 : 6;
 
   function toggleCategory(category: string) {
     setCategories((prev) => {
@@ -78,11 +83,11 @@ export default function GetStartedPage() {
   }
 
   function goNext() {
-    if (step < TOTAL_STEPS) setStep((step + 1) as 1 | 2 | 3 | 4);
+    if (step < TOTAL_STEPS) setStep(step + 1);
   }
 
   function goBack() {
-    if (step > 1) setStep((step - 1) as 1 | 2 | 3 | 4);
+    if (step > 1) setStep(step - 1);
   }
 
   async function handleSubmit() {
@@ -90,14 +95,15 @@ export default function GetStartedPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    // Returning users keep their existing name; new users supply a username
     const nameToUse = isReturning ? existingName! : username.trim();
 
     try {
       const result = await saveProfile({
         fullName: nameToUse,
         username: username.trim() || undefined,
-        journeyStage: journeyStage || undefined,
+        emotionalState: emotionalState || undefined,
+        hereFor: hereFor || undefined,
+        ageRange: ageRange || undefined,
         description: description.trim(),
         experienceCategories: Array.from(categories),
       });
@@ -117,10 +123,12 @@ export default function GetStartedPage() {
   }
 
   const canContinue =
-    (step === 1 && categories.size > 0) ||
-    (step === 2 && journeyStage !== "") ||
-    step === 3 || // description is optional
-    (step === 4 && username.trim().length >= 2 && confirmedAdult);
+    (step === 1 && emotionalState !== "") ||
+    (step === 2 && hereFor !== "") ||
+    (step === 3 && ageRange !== "") ||
+    (step === 4 && categories.size > 0) ||
+    step === 5 || // intro is optional
+    (step === 6 && username.trim().length >= 2 && confirmedAdult);
 
   const progress = (step / TOTAL_STEPS) * 100;
 
@@ -177,19 +185,25 @@ export default function GetStartedPage() {
           style={{ backgroundColor: c.card, borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
 
           {step === 1 && (
+            <StepEmotionalState value={emotionalState} onChange={setEmotionalState} />
+          )}
+          {step === 2 && (
+            <StepHereFor value={hereFor} onChange={setHereFor} />
+          )}
+          {step === 3 && (
+            <StepAgeRange value={ageRange} onChange={setAgeRange} />
+          )}
+          {step === 4 && (
             <StepCategories
               selected={categories}
               onToggle={toggleCategory}
               firstName={existingName?.split(" ")[0] || null}
             />
           )}
-          {step === 2 && (
-            <StepJourneyStage value={journeyStage} onChange={setJourneyStage} />
+          {step === 5 && (
+            <StepDescription value={description} onChange={setDescription} maxLength={150} />
           )}
-          {step === 3 && (
-            <StepDescription value={description} onChange={setDescription} maxLength={DESCRIPTION_MAX} />
-          )}
-          {step === 4 && !isReturning && (
+          {step === 6 && !isReturning && (
             <StepUsername
               value={username}
               onChange={setUsername}
@@ -235,7 +249,123 @@ export default function GetStartedPage() {
   );
 }
 
-// ── Step 1: Experience categories (accordion) ────────────────────────────────
+// ── Step 1: Emotional state ───────────────────────────────────────────────────
+
+const EMOTIONAL_STATES = [
+  { value: "Excited", emoji: "✨", sub: "Ready for what's next" },
+  { value: "Hopeful", emoji: "🌤️", sub: "Things are looking up" },
+  { value: "At peace", emoji: "🌿", sub: "Settled, open to connection" },
+  { value: "Uncertain", emoji: "🌀", sub: "Figuring things out" },
+  { value: "Struggling", emoji: "🌧️", sub: "It's been a tough stretch" },
+];
+
+function StepEmotionalState({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+        How are you feeling right now?
+      </h1>
+      <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        No right answer — just where you are today.
+      </p>
+      <div className="space-y-3" role="radiogroup" aria-label="How you're feeling">
+        {EMOTIONAL_STATES.map((s) => {
+          const isSelected = value === s.value;
+          return (
+            <button key={s.value} type="button" role="radio" aria-checked={isSelected}
+              onClick={() => onChange(s.value)}
+              className="w-full rounded-xl px-5 py-4 text-left transition-all flex items-center gap-4"
+              style={isSelected
+                ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(14,165,233,0.3)" }
+                : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+              <span className="text-2xl">{s.emoji}</span>
+              <div>
+                <p className="font-semibold text-base" style={{ color: isSelected ? "#fff" : c.ink }}>{s.value}</p>
+                <p className="text-sm mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.8)" : c.inkMuted }}>{s.sub}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 2: What you're here for ─────────────────────────────────────────────
+
+const HERE_FOR_OPTIONS = [
+  { value: "Listen", emoji: "👂", sub: "I want to hear someone else's story" },
+  { value: "Share my story", emoji: "💬", sub: "I need to talk it through" },
+  { value: "Figure things out", emoji: "🧭", sub: "I'm looking for perspective" },
+  { value: "Feel less alone", emoji: "🤝", sub: "I just want to know others get it" },
+  { value: "Get perspective", emoji: "🔭", sub: "I want to hear how others see it" },
+];
+
+function StepHereFor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+        What are you here for?
+      </h1>
+      <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        This helps us match you with the right kind of conversation partner.
+      </p>
+      <div className="space-y-3" role="radiogroup" aria-label="What you're here for">
+        {HERE_FOR_OPTIONS.map((s) => {
+          const isSelected = value === s.value;
+          return (
+            <button key={s.value} type="button" role="radio" aria-checked={isSelected}
+              onClick={() => onChange(s.value)}
+              className="w-full rounded-xl px-5 py-4 text-left transition-all flex items-center gap-4"
+              style={isSelected
+                ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(14,165,233,0.3)" }
+                : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+              <span className="text-2xl">{s.emoji}</span>
+              <div>
+                <p className="font-semibold text-base" style={{ color: isSelected ? "#fff" : c.ink }}>{s.value}</p>
+                <p className="text-sm mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.8)" : c.inkMuted }}>{s.sub}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 3: Age range ─────────────────────────────────────────────────────────
+
+const AGE_RANGES = ["60–65", "65–70", "70–75", "75–80", "80+"];
+
+function StepAgeRange({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
+        How old are you?
+      </h1>
+      <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
+        We use this to find peers at a similar stage of life.
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Age range">
+        {AGE_RANGES.map((range) => {
+          const isSelected = value === range;
+          return (
+            <button key={range} type="button" role="radio" aria-checked={isSelected}
+              onClick={() => onChange(range)}
+              className="rounded-xl px-5 py-5 text-center transition-all"
+              style={isSelected
+                ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(14,165,233,0.3)" }
+                : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
+              <p className="font-semibold text-lg" style={{ color: isSelected ? "#fff" : c.ink }}>{range}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 4: Experience categories (accordion) ────────────────────────────────
 
 function StepCategories({
   selected, onToggle, firstName,
@@ -336,42 +466,7 @@ function StepCategories({
   );
 }
 
-// ── Step 2: Journey stage ─────────────────────────────────────────────────────
-
-function StepJourneyStage({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: c.ink }}>
-        Where are you in this chapter?
-      </h1>
-      <p className="mb-8 text-lg leading-relaxed" style={{ color: c.inkSoft }}>
-        We'll connect you with someone at a similar point — whether you're just starting out or ready to share what you've learned.
-      </p>
-      <div className="space-y-3" role="radiogroup" aria-label="Where you are in this chapter">
-        {JOURNEY_STAGES.map((stage) => {
-          const isSelected = value === stage.value;
-          return (
-            <button key={stage.value} type="button" role="radio" aria-checked={isSelected}
-              onClick={() => onChange(stage.value)}
-              className="w-full rounded-xl px-5 py-4 text-left transition-all"
-              style={isSelected
-                ? { backgroundColor: c.sage, color: "#fff", boxShadow: "0 1px 4px rgba(107,91,158,0.3)" }
-                : { backgroundColor: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: c.border }}>
-              <p className="font-semibold text-base" style={{ color: isSelected ? "#fff" : c.ink }}>
-                {stage.label}
-              </p>
-              <p className="text-sm mt-0.5" style={{ color: isSelected ? "rgba(255,255,255,0.75)" : c.inkMuted }}>
-                {stage.sub}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Step 3: Description ───────────────────────────────────────────────────────
+// ── Step 5: Description ───────────────────────────────────────────────────────
 
 function StepDescription({ value, onChange, maxLength }: { value: string; onChange: (value: string) => void; maxLength: number }) {
   const remaining = maxLength - value.length;
@@ -399,7 +494,7 @@ function StepDescription({ value, onChange, maxLength }: { value: string; onChan
   );
 }
 
-// ── Step 4: Username + adult confirm (new users only) ────────────────────────
+// ── Step 6: Username + adult confirm (new users only) ────────────────────────
 
 function StepUsername({ value, onChange, confirmedAdult, onConfirmedAdultChange }: {
   value: string; onChange: (value: string) => void;
