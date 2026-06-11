@@ -9,17 +9,18 @@ import { MatchProposalCard } from "@/app/components/match-proposal-card";
 import type { MatchRequest } from "@/lib/match-request";
 
 const c = {
-  bg: "#f5f3f8",
-  ink: "#1a1625",
-  inkSoft: "#3d3654",
-  inkMuted: "#9b91b8",
+  bg: "#EFF8FF",
+  bgGradient: "linear-gradient(145deg, #dbeafe 0%, #e0f2fe 45%, #f0f9ff 100%)",
+  ink: "#0c1a2e",
+  inkSoft: "#1e3a5f",
+  inkMuted: "#6b7f96",
   sage: "#0EA5E9",
   sageLight: "#E0F2FE",
   apricot: "#EA580C",
-  apricotLight: "#f5ece6",
-  card: "#ffffff",
-  border: "#edeaf4",
-  green: "#4a7c5f",
+  apricotLight: "#fff0e6",
+  card: "rgba(255,255,255,0.82)",
+  border: "#bfdbfe",
+  green: "#0d7c4e",
 } as const;
 
 type Topic = {
@@ -371,10 +372,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: c.bg }}>
+    <div className="min-h-screen font-sans" style={{ background: c.bgGradient }}>
 
       {/* Nav */}
-      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: c.bg }}>
+      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: "rgba(239,248,255,0.85)", backdropFilter: "blur(8px)" }}>
         <div className="mx-auto max-w-2xl flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <AapunMark size={26} />
@@ -661,7 +662,7 @@ export default function DashboardPage() {
 
       {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around border-t py-2 px-4"
-        style={{ backgroundColor: c.bg, borderColor: c.border }}>
+        style={{ backgroundColor: "rgba(239,248,255,0.92)", backdropFilter: "blur(8px)", borderColor: c.border }}>
         {navItems.map((item) => (
           <Link key={item.label} href={item.href}
             className="flex flex-col items-center gap-0.5 px-2 py-1"
@@ -678,8 +679,8 @@ export default function DashboardPage() {
 function AapunMark({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
-      <circle cx="15" cy="20" r="11" fill={`rgba(107,91,158,0.33)`} stroke="rgba(107,91,158,0.8)" strokeWidth="1.5" />
-      <circle cx="25" cy="20" r="11" fill={`rgba(201,122,82,0.33)`} stroke="rgba(201,122,82,0.8)" strokeWidth="1.5" />
+      <circle cx="15" cy="20" r="11" fill="rgba(14,165,233,0.25)" stroke="#0EA5E9" strokeWidth="1.5" />
+      <circle cx="25" cy="20" r="11" fill="rgba(234,88,12,0.25)" stroke="#EA580C" strokeWidth="1.5" />
     </svg>
   );
 }
