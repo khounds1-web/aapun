@@ -96,7 +96,7 @@ async function autoMatch(
     .select("*")
     .neq("user_id", newProfile.user_id)
     .is("match_id", null)
-    .filter("experience_categories", "ov", `{${categories.join(",")}}`);
+    .filter("experience_categories", "ov", `{${categories.map(c => `"${c}"`).join(",")}}`);
 
   if (!potentialMatches || potentialMatches.length === 0) return;
 

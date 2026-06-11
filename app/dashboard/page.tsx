@@ -237,7 +237,7 @@ export default function DashboardPage() {
     const { data } = await supabase
       .from("profiles")
       .select("id, full_name, username, experience_categories, user_id")
-      .filter("experience_categories", "ov", `{${categories.join(",")}}`)
+      .filter("experience_categories", "ov", `{${categories.map(c => `"${c}"`).join(",")}}`)
       .neq("user_id", userId)
       .limit(10);
 
