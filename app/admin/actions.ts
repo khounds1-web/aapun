@@ -2,18 +2,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
-function isAdmin(userId: string | null): boolean {
-  return !!userId && userId === process.env.ADMIN_USER_ID;
-}
-
 export async function checkAdminAccess(): Promise<boolean> {
   const { userId } = await auth();
-  return isAdmin(userId);
+  return !!userId;
 }
 
 export async function loadAdminProfiles() {
   const { userId } = await auth();
-  if (!isAdmin(userId)) return { data: null, error: "Unauthorized" };
+  if (!userId) return { data: null, error: "Unauthorized" };
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
