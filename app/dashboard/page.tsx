@@ -9,16 +9,14 @@ import { MatchProposalCard } from "@/app/components/match-proposal-card";
 import type { MatchRequest } from "@/lib/match-request";
 
 const c = {
-  bg: "#EFF8FF",
-  bgGradient: "linear-gradient(145deg, #dbeafe 0%, #e0f2fe 45%, #f0f9ff 100%)",
   ink: "#0c1a2e",
   inkSoft: "#1e3a5f",
-  inkMuted: "#6b7f96",
+  inkMuted: "#4a6280",
   sage: "#0EA5E9",
-  sageLight: "#E0F2FE",
+  sageLight: "#dbeafe",
   apricot: "#EA580C",
   apricotLight: "#fff0e6",
-  card: "rgba(255,255,255,0.82)",
+  card: "rgba(255,255,255,0.88)",
   border: "#bfdbfe",
   green: "#0d7c4e",
 } as const;
@@ -372,10 +370,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: c.bgGradient }}>
+    <div className="min-h-screen font-sans">
 
       {/* Nav */}
-      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: "rgba(239,248,255,0.85)", backdropFilter: "blur(8px)" }}>
+      <header className="border-b px-6 sm:px-10" style={{ borderColor: c.border, backgroundColor: "rgba(219,234,254,0.75)", backdropFilter: "blur(10px)" }}>
         <div className="mx-auto max-w-2xl flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <AapunMark size={26} />
@@ -662,7 +660,7 @@ export default function DashboardPage() {
 
       {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around border-t py-2 px-4"
-        style={{ backgroundColor: "rgba(239,248,255,0.92)", backdropFilter: "blur(8px)", borderColor: c.border }}>
+        style={{ backgroundColor: "rgba(219,234,254,0.85)", backdropFilter: "blur(10px)", borderColor: c.border }}>
         {navItems.map((item) => (
           <Link key={item.label} href={item.href}
             className="flex flex-col items-center gap-0.5 px-2 py-1"
